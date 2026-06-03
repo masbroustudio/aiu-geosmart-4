@@ -1,15 +1,42 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { MapPin, Loader2 } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function LoginPage() {
-  const [submitted, setSubmitted] = useState(false);
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setError("");
+    setLoading(true);
+
+    try {
+      const result = await api.post("/auth/login", { email, password });
+      
+      if (result.success) {
+        setSuccess(true);
+        // Redirect to dashboard after 1 second
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1000);
+      } else {
+        setError(result.error || "Login gagal");
+      }
+    } catch (err) {
+      setError("Terjadi kesalahan saat login. Coba lagi.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -35,11 +62,15 @@ export default function LoginPage() {
           Akses platform intelijen UMKM terdepan
         </p>
 
-        {submitted && (
-          <div className="mb-5 p-3 rounded-lg bg-accent/10 border border-accent/30 text-center">
-            <p className="text-sm text-accent font-medium">
-              Fitur autentikasi akan segera tersedia
-            </p>
+        {error && (
+          <div className="mb-5 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-center">
+            <p className="text-sm text-red-400 font-medium">{error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-5 p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-center">
+            <p className="text-sm text-green-400 font-medium">Login berhasil! Mengalihkan...</p>
           </div>
         )}
 
@@ -50,8 +81,12 @@ export default function LoginPage() {
             </label>
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="nama@perusahaan.com"
-              className="w-full px-4 py-3 rounded-lg bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors"
+              required
+              disabled={loading}
+              className="w-full px-4 py-3 rounded-lg bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors disabled:opacity-50"
             />
           </div>
 
@@ -61,16 +96,28 @@ export default function LoginPage() {
             </label>
             <input
               type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="Masukkan password"
-              className="w-full px-4 py-3 rounded-lg bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors"
+              required
+              disabled={loading}
+              className="w-full px-4 py-3 rounded-lg bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors disabled:opacity-50"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full py-3 rounded-lg bg-gradient-to-r from-primary to-accent text-white font-semibold hover:shadow-lg hover:shadow-accent/25 transition-all"
+            disabled={loading}
+            className="w-full py-3 rounded-lg bg-gradient-to-r from-primary to-accent text-white font-semibold hover:shadow-lg hover:shadow-accent/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            Masuk
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Sedang memproses...
+              </>
+            ) : (
+              "Masuk"
+            )}
           </button>
         </form>
 

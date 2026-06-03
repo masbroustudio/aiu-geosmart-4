@@ -1,15 +1,59 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { MapPin, Loader2 } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function RegisterPage() {
-  const [submitted, setSubmitted] = useState(false);
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setError("");
+
+    if (password !== confirmPassword) {
+      setError("Password tidak cocok");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password minimal 6 karakter");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const result = await api.post("/auth/register", {
+        email,
+        password,
+        name
+      });
+
+      if (result.success) {
+        setSuccess(true);
+        // Redirect to login after 1 second
+        setTimeout(() => {
+          router.push("/login");
+        }, 1000);
+      } else {
+        setError(result.error || "Registrasi gagal");
+      }
+    } catch (err) {
+      setError("Terjadi kesalahan saat registrasi. Coba lagi.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -35,11 +79,15 @@ export default function RegisterPage() {
           Mulai gunakan platform intelijen UMKM
         </p>
 
-        {submitted && (
-          <div className="mb-5 p-3 rounded-lg bg-accent/10 border border-accent/30 text-center">
-            <p className="text-sm text-accent font-medium">
-              Fitur autentikasi akan segera tersedia
-            </p>
+        {error && (
+          <div className="mb-5 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-center">
+            <p className="text-sm text-red-400 font-medium">{error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-5 p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-center">
+            <p className="text-sm text-green-400 font-medium">Registrasi berhasil! Mengalihkan ke login...</p>
           </div>
         )}
 
@@ -50,8 +98,12 @@ export default function RegisterPage() {
             </label>
             <input
               type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="John Doe"
-              className="w-full px-4 py-3 rounded-lg bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors"
+              required
+              disabled={loading}
+              className="w-full px-4 py-3 rounded-lg bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors disabled:opacity-50"
             />
           </div>
 
@@ -61,27 +113,58 @@ export default function RegisterPage() {
             </label>
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="nama@perusahaan.com"
-              className="w-full px-4 py-3 rounded-lg bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors"
+              required
+              disabled={loading}
+              className="w-full px-4 py-3 rounded-lg bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors disabled:opacity-50"
             />
           </div>
 
-          <div>
+           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">
               Password
             </label>
             <input
               type="password"
-              placeholder="Minimal 8 karakter"
-              className="w-full px-4 py-3 rounded-lg bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Minimal 6 karakter"
+              required
+              disabled={loading}
+              className="w-full px-4 py-3 rounded-lg bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors disabled:opacity-50"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+              Konfirmasi Password
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Ulangi password"
+              required
+              disabled={loading}
+              className="w-full px-4 py-3 rounded-lg bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors disabled:opacity-50"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full py-3 rounded-lg bg-gradient-to-r from-primary to-accent text-white font-semibold hover:shadow-lg hover:shadow-accent/25 transition-all"
+            disabled={loading}
+            className="w-full py-3 rounded-lg bg-gradient-to-r from-primary to-accent text-white font-semibold hover:shadow-lg hover:shadow-accent/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            Daftar
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Sedang memproses...
+              </>
+            ) : (
+              "Daftar"
+            )}
           </button>
         </form>
 
