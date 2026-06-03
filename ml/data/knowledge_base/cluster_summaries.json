@@ -1,0 +1,198 @@
+[
+  {
+    "id": "cluster_0",
+    "type": "cluster_summary",
+    "cluster_id": 0,
+    "cluster_name": "Urban Digital Leaders",
+    "description": "Mature urban businesses with strong digital presence, high infrastructure scores, and above-average revenue.",
+    "n_umkm": 2368,
+    "key_characteristics": {
+      "avg_infrastructure_score": 83.1,
+      "avg_income_per_kapita": 11.42,
+      "avg_omset_bulanan_juta": 76.93,
+      "digital_adoption_rate": 0.741,
+      "survival_rate_3yr": 0.719,
+      "kur_penetration_pct": 31.2
+    },
+    "swot": {
+      "strengths": [
+        "Strong infrastructure base",
+        "High income per capita in area",
+        "High digital adoption",
+        "High business survival rate",
+        "Strong revenue generation"
+      ],
+      "weaknesses": [
+        "No major weaknesses identified"
+      ],
+      "opportunities": [
+        "Government intervention programs",
+        "New market entry for underserved sectors"
+      ],
+      "threats": [
+        "Market competition from neighboring areas"
+      ]
+    },
+    "government_priority_rank": 5,
+    "investment_rank": 1,
+    "recommended_actions": [
+      "Scale-up support and market expansion"
+    ]
+  },
+  {
+    "id": "cluster_1",
+    "type": "cluster_summary",
+    "cluster_id": 1,
+    "cluster_name": "Rural Developing",
+    "description": "Emerging businesses in rural areas with growing infrastructure and moderate digital adoption.",
+    "n_umkm": 2684,
+    "key_characteristics": {
+      "avg_infrastructure_score": 65.9,
+      "avg_income_per_kapita": 7.38,
+      "avg_omset_bulanan_juta": 51.41,
+      "digital_adoption_rate": 0.415,
+      "survival_rate_3yr": 0.684,
+      "kur_penetration_pct": 30.0
+    },
+    "swot": {
+      "strengths": [
+        "Strong revenue generation"
+      ],
+      "weaknesses": [
+        "No major weaknesses identified"
+      ],
+      "opportunities": [
+        "Digital transformation potential",
+        "Government intervention programs",
+        "New market entry for underserved sectors"
+      ],
+      "threats": [
+        "Market competition from neighboring areas"
+      ]
+    },
+    "government_priority_rank": 3,
+    "investment_rank": 2,
+    "recommended_actions": [
+      "Implement digital literacy programs",
+      "Scale-up support and market expansion"
+    ]
+  },
+  {
+    "id": "cluster_2",
+    "type": "cluster_summary",
+    "cluster_id": 2,
+    "cluster_name": "Urban Digital Leaders (2)",
+    "description": "A distinct business segment identified through clustering analysis.",
+    "n_umkm": 926,
+    "key_characteristics": {
+      "avg_infrastructure_score": 81.6,
+      "avg_income_per_kapita": 10.76,
+      "avg_omset_bulanan_juta": 66.17,
+      "digital_adoption_rate": 0.649,
+      "survival_rate_3yr": 0.668,
+      "kur_penetration_pct": 30.2
+    },
+    "swot": {
+      "strengths": [
+        "Strong infrastructure base",
+        "High income per capita in area",
+        "High digital adoption",
+        "Strong revenue generation"
+      ],
+      "weaknesses": [
+        "No major weaknesses identified"
+      ],
+      "opportunities": [
+        "Government intervention programs",
+        "New market entry for underserved sectors"
+      ],
+      "threats": [
+        "Market competition from neighboring areas"
+      ]
+    },
+    "government_priority_rank": 4,
+    "investment_rank": 3,
+    "recommended_actions": [
+      "Scale-up support and market expansion"
+    ]
+  },
+  {
+    "id": "cluster_3",
+    "type": "cluster_summary",
+    "cluster_id": 3,
+    "cluster_name": "High-Risk Underserved",
+    "description": "Businesses in underserved areas with low infrastructure, high natural disaster risk, and limited financial access.",
+    "n_umkm": 2124,
+    "key_characteristics": {
+      "avg_infrastructure_score": 53.1,
+      "avg_income_per_kapita": 5.46,
+      "avg_omset_bulanan_juta": 45.03,
+      "digital_adoption_rate": 0.314,
+      "survival_rate_3yr": 0.651,
+      "kur_penetration_pct": 19.2
+    },
+    "swot": {
+      "strengths": [
+        "Stable market position"
+      ],
+      "weaknesses": [
+        "Low area income levels"
+      ],
+      "opportunities": [
+        "Room for KUR expansion",
+        "Digital transformation potential",
+        "Infrastructure development investment",
+        "Government intervention programs",
+        "New market entry for underserved sectors"
+      ],
+      "threats": [
+        "Seismic activity risk",
+        "Market competition from neighboring areas"
+      ]
+    },
+    "government_priority_rank": 1,
+    "investment_rank": 5,
+    "recommended_actions": [
+      "Prioritize infrastructure development",
+      "Implement digital literacy programs",
+      "Expand KUR access and financial inclusion"
+    ]
+  },
+  {
+    "id": "cluster_4",
+    "type": "cluster_summary",
+    "cluster_id": 4,
+    "cluster_name": "High-Risk Underserved (4)",
+    "description": "A distinct business segment identified through clustering analysis.",
+    "n_umkm": 1898,
+    "key_characteristics": {
+      "avg_infrastructure_score": 66.9,
+      "avg_income_per_kapita": 7.81,
+      "avg_omset_bulanan_juta": 57.07,
+      "digital_adoption_rate": 0.519,
+      "survival_rate_3yr": 0.664,
+      "kur_penetration_pct": 31.1
+    },
+    "swot": {
+      "strengths": [
+        "Strong revenue generation"
+      ],
+      "weaknesses": [
+        "No major weaknesses identified"
+      ],
+      "opportunities": [
+        "Government intervention programs",
+        "New market entry for underserved sectors"
+      ],
+      "threats": [
+        "High flood risk",
+        "Market competition from neighboring areas"
+      ]
+    },
+    "government_priority_rank": 2,
+    "investment_rank": 4,
+    "recommended_actions": [
+      "Scale-up support and market expansion"
+    ]
+  }
+]

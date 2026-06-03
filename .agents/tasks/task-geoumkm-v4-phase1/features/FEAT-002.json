@@ -1,0 +1,47 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Initialize Next.js 14 frontend project with App Router, TypeScript, Tailwind CSS, and build the premium landing page with all sections, animations, and dashboard skeleton pages",
+  "status": "completed",
+  "steps": [
+    "Initialize Next.js 14 project in frontend/ with: pnpm create next-app@latest frontend --typescript --tailwind --eslint --app --src-dir=false --import-alias='@/*' --use-pnpm (or manually create package.json and config files)",
+    "Install additional dependencies: framer-motion, lucide-react, clsx, tailwind-merge, class-variance-authority (for shadcn-style utilities)",
+    "Configure tailwind.config.ts with custom colors (primary: #1F4E79, accent: #10B981), Inter font, and animation utilities",
+    "Create frontend/app/globals.css with Tailwind directives, Inter font import, CSS mesh gradient animations, floating particle effects (pure CSS keyframes), glassmorphism utility classes, and dark/light mode CSS variables",
+    "Create frontend/lib/utils.ts with cn() helper using clsx + tailwind-merge",
+    "Create frontend/app/layout.tsx as root layout with Inter font, metadata for GeoUMKM Intelligence v4.0, dark mode support via class strategy",
+    "Create frontend/components/landing/Navbar.tsx - sticky glassmorphism navbar with logo, nav links, and CTA button",
+    "Create frontend/components/landing/HeroSection.tsx - animated mesh gradient background, floating CSS particles, gradient text headline in Indonesian ('Platform Intelijen UMKM Terdepan'), English subtitle, animated stats counters using framer-motion useInView + animate",
+    "Create frontend/components/landing/FeaturesSection.tsx - glassmorphism cards with hover tilt effects (CSS transform + framer-motion), icons from lucide-react, showcasing: Credit Scoring AI, Location Intelligence, Clustering & Segmentation, Policy Simulation, AI Chat Assistant, Executive Reports",
+    "Create frontend/components/landing/ForWhoSection.tsx - tabbed interface (Bank/Pemerintah/Investor) with animated tab switching, each tab shows relevant features and benefits with icons",
+    "Create frontend/components/landing/TechStackSection.tsx - animated tech stack badges/icons with hover effects, showing: Next.js, Azure, XGBoost, Python, TypeScript, OpenAI",
+    "Create frontend/components/landing/PricingSection.tsx - 3 tier pricing cards (Starter/Professional/Enterprise) with glassmorphism, hover scale effects, feature lists per tier, in IDR currency",
+    "Create frontend/components/landing/Footer.tsx - footer with links, copyright, social links",
+    "Create frontend/app/(landing)/page.tsx - compose all landing page sections with framer-motion scroll animations (fadeInUp on intersection), smooth section transitions",
+    "Create frontend/components/dashboard/Sidebar.tsx - responsive sidebar with navigation items (Overview, Credit Scoring, Location Intelligence, Clustering, Policy Simulation, Reports, Settings), collapsible on mobile, active state indicator",
+    "Create frontend/components/dashboard/DashboardLayout.tsx - layout wrapper with sidebar + main content area + floating AI chat button",
+    "Create frontend/components/chat/FloatingChatPanel.tsx - floating chat panel component (UI only), expandable/collapsible, chat input area, placeholder messages",
+    "Create frontend/app/(dashboard)/layout.tsx - dashboard layout using DashboardLayout component",
+    "Create placeholder pages for all dashboard routes: (dashboard)/overview/page.tsx, (dashboard)/credit-scoring/page.tsx, (dashboard)/location-intelligence/page.tsx, (dashboard)/clustering/page.tsx, (dashboard)/policy-simulation/page.tsx, (dashboard)/reports/page.tsx, (dashboard)/settings/page.tsx - each with title and 'Coming Soon' card with relevant icon",
+    "Create frontend/app/(auth)/login/page.tsx and (auth)/register/page.tsx - simple auth page placeholders with form UI",
+    "Create frontend/next.config.js with output: 'standalone' for Azure deployment",
+    "Ensure all components are responsive (mobile-first) and support dark/light mode"
+  ],
+  "acceptance_criteria": [
+    "pnpm install completes without errors in frontend/",
+    "pnpm build completes without TypeScript or build errors",
+    "Landing page has: navbar, hero with animations, features cards, for-who tabs, tech stack, pricing, footer",
+    "Dashboard has: sidebar navigation, all 7 placeholder pages, floating chat panel UI",
+    "Auth pages exist with login and register forms",
+    "All pages are responsive",
+    "Dark/light mode CSS variables are configured",
+    "Framer motion animations are used for scroll reveals and counters",
+    "CSS-only mesh gradient and particle effects in hero section (no heavy JS animation libraries)"
+  ],
+  "verification": [
+    "Run: cd /projects/sandbox/geoumkm-smart-3/frontend && pnpm install && pnpm build",
+    "Verify the build output shows all routes compiled successfully"
+  ],
+  "blocked_reason": null,
+  "findings": "Build passes successfully with all 13 routes compiled as static pages. Used pnpm 10.28.1, Next.js 14.2.35, framer-motion 11.18.2, lucide-react 0.400.0. The next-env.d.ts was included manually (Next.js usually auto-generates it). All routes render as static (SSG). Dashboard pages use server components (no client interactivity needed), landing components and auth pages use 'use client' for framer-motion/useState. Footer is a server component since it has no client-side interactions."
+}

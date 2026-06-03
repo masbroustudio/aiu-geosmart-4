@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-001",
+  "type": "chore",
+  "description": "Setup Python environment and project structure. Install all required packages, create data/ and models/ directories, remove old notebooks.",
+  "status": "completed",
+  "steps": [
+    "Install Python packages: pip install pandas numpy scikit-learn xgboost lightgbm scipy matplotlib seaborn shapely nbformat nbconvert jupyter-client ipykernel joblib",
+    "Create directories: data/ and models/ inside /projects/sandbox/geoumkm-smart-3/",
+    "Create data/.gitkeep and models/.gitkeep so the directories are tracked",
+    "Remove old notebooks from notebooks/ directory (all 6 existing .ipynb files)",
+    "Remove old HTML docs from docs/ directory (all 6 existing .html files)",
+    "Verify packages are importable by running a quick python -c test"
+  ],
+  "acceptance_criteria": [
+    "All packages (pandas, numpy, scikit-learn, xgboost, lightgbm, scipy, matplotlib, seaborn, shapely, nbformat, nbconvert) are importable",
+    "data/ and models/ directories exist with .gitkeep files",
+    "notebooks/ directory is empty (old files removed)",
+    "docs/ directory is empty (old files removed)"
+  ],
+  "verification": [
+    "Run: python -c \"import pandas, numpy, sklearn, xgboost, lightgbm, scipy, matplotlib, seaborn, shapely, nbformat; print('All packages OK')\"",
+    "Run: ls data/.gitkeep models/.gitkeep",
+    "Run: ls notebooks/ (should be empty)",
+    "Run: ls docs/ (should be empty)"
+  ],
+  "blocked_reason": null,
+  "findings": "Python 3.9.25 available via pyenv as python3 (not python). All packages installed successfully. pip dependency conflict warning for awscli is benign and does not affect project packages. Use python3 (not python) for all subsequent commands."
+}

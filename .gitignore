@@ -1,0 +1,110 @@
+# ===========================================
+# PYTHON
+# ===========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+!frontend/lib/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ===========================================
+# VIRTUAL ENVIRONMENT
+# ===========================================
+venv/
+ENV/
+env/
+.venv/
+.ENV/
+
+# ===========================================
+# JUPYTER NOTEBOOK
+# ===========================================
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
+
+# ===========================================
+# NODE.JS / NEXT.JS
+# ===========================================
+node_modules/
+.next/
+out/
+.env.local
+.env*.local
+.turbo/
+.vercel/
+next-env.d.ts
+
+# ===========================================
+# IDE & EDITOR
+# ===========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# ===========================================
+# OPERATING SYSTEM
+# ===========================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===========================================
+# DATA & LARGE FILES
+# ===========================================
+*.parquet
+*.csv
+*.xlsx
+*.zip
+*.tar.gz
+*.7z
+
+# ===========================================
+# AZURE & DEPLOYMENT
+# ===========================================
+.azure/
+*.publishsettings
+*.pubxml
+*.pubxml.user
+package-lock.json
+
+# ===========================================
+# LOGS & TEMPORARY FILES
+# ===========================================
+*.log
+*.tmp
+*.temp
+*.cache
+
+# ===========================================
+# SECRETS & ENVIRONMENT
+# ===========================================
+.env
+secrets.json
+config.json
+
+# ===========================================
+# DOCUMENTATION BUILD
+# ===========================================
+docs/_build/
+site/

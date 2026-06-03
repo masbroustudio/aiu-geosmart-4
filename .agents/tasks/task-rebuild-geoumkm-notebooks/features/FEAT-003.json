@@ -1,0 +1,32 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Create Notebook 02: Exploratory Data Analysis & Feature Engineering. Comprehensive EDA with spatial analysis, correlation analysis, and feature engineering for subsequent modeling notebooks.",
+  "status": "completed",
+  "steps": [
+    "Create /projects/sandbox/geoumkm-smart-3/notebooks/02_EDA_Feature_Engineering.ipynb using nbformat",
+    "SECTION 1 - Load Data: Read data/umkm_dataset.csv and data/kecamatan_reference.csv. Display basic info, shape, dtypes, missing values.",
+    "SECTION 2 - Univariate Analysis: Distribution plots (histograms + KDE) for all numeric features. Bar charts for categorical features (jenis_usaha, kabupaten distribution). Summary statistics table.",
+    "SECTION 3 - Spatial Distribution Analysis: Scatter plot of UMKM locations colored by skor_potensi. Heatmap-style density of UMKMs per kabupaten/kota. Compare urban vs rural distributions.",
+    "SECTION 4 - Correlation Analysis (meaningful - not circular): Full correlation matrix heatmap. Focus on correlations between features and target (is_survived_3yr, skor_potensi). Identify top predictive features. Use Pearson for continuous-continuous, point-biserial for continuous-binary.",
+    "SECTION 5 - Bivariate Analysis: skor_potensi vs key features (scatter + regression line). Survival rate by jenis_usaha (bar chart). Survival rate by kabupaten (geographic comparison). Box plots: omset by survival status, by jenis_usaha.",
+    "SECTION 6 - Spatial Autocorrelation: Compute spatial lag of skor_potensi (average score of nearby UMKMs). Simple Moran's I calculation concept. Identify spatial hotspots and coldspots.",
+    "SECTION 7 - Feature Engineering: Create interaction features: infra_x_income = skor_infrastruktur * income_per_kapita_normalized. Create ratio features: competition_density_ratio = jumlah_kompetitor / kepadatan_penduduk. Create distance composite: avg_distance_to_facilities. Create market gap score: inverse of competition saturation. Create digital_readiness_index: composite of akses_internet + has_digital_presence + urban proximity. Create risk_composite: weighted combination of risiko_banjir and risiko_gempa. Create business_maturity: based on tahun_berdiri (years in operation).",
+    "SECTION 8 - Feature Selection: Compute mutual information scores for all features vs targets. Variance Inflation Factor (VIF) analysis to check multicollinearity. Select final feature set for modeling.",
+    "SECTION 9 - Save engineered dataset: Save to data/umkm_engineered.csv with all original + new features. Print summary of new features created.",
+    "Include comprehensive markdown explanations for each section. Use seaborn and matplotlib for all visualizations."
+  ],
+  "acceptance_criteria": [
+    "Notebook executes end-to-end without errors",
+    "data/umkm_engineered.csv is created with original columns plus at least 7 new engineered features",
+    "All visualizations render (matplotlib/seaborn plots embedded in notebook output)",
+    "Correlation analysis shows meaningful (non-circular) relationships between features",
+    "Feature importance ranking identifies top 10 features for modeling"
+  ],
+  "verification": [
+    "Execute the notebook: jupyter nbconvert --to notebook --execute notebooks/02_EDA_Feature_Engineering.ipynb --ExecutePreprocessor.timeout=300 --output executed_02.ipynb --output-dir /tmp/",
+    "Check output: python -c \"import pandas as pd; df = pd.read_csv('data/umkm_engineered.csv'); print(f'Rows: {len(df)}, Cols: {len(df.columns)}'); assert len(df.columns) > 25\""
+  ],
+  "blocked_reason": null,
+  "findings": "Notebook executes successfully in ~20s. Generated 10 engineered features (34 total columns). Needed to install statsmodels for VIF analysis. Output: data/umkm_engineered.csv (10000 rows, 34 cols). The actual dataset does not have umkm_id or nama_usaha columns (only 24 original columns from Notebook 01). Spatial autocorrelation analysis uses scipy.spatial.cKDTree for nearest-neighbor computation. Use python3 and ensure statsmodels is installed for VIF."
+}

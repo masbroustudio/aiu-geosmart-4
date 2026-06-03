@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-003",
+  "type": "docs",
+  "description": "Create comprehensive Azure Setup Guide, Architecture documentation, and update GitHub Actions workflow for Next.js deployment to Azure Static Web Apps",
+  "status": "completed",
+  "steps": [
+    "Create docs/AZURE_SETUP_GUIDE.md with complete step-by-step Azure setup instructions. Include: Prerequisites (Azure CLI install, az login), Step 1: Create Resource Group (rg-geoumkm-prod in Southeast Asia), Step 2: Create Azure Static Web Apps (for Next.js frontend), Step 3: Create Azure Functions App (Python runtime for API), Step 4: Create Azure SQL Database (Basic tier DTU-based, ~$5/month), Step 5: Create Azure OpenAI Service (request access instructions + deploy gpt-4o), Step 6: Create Azure AI Search (Free/Basic tier), Step 7: Create Azure Blob Storage (LRS, hot tier for models), Step 8: Create Azure Entra ID B2C tenant (for user auth), Step 9: Setup Azure Key Vault (store all secrets), Step 10: Configure environment variables and connections between services, Step 11: Deploy via GitHub Actions (link to workflow file). Each step must have: Azure Portal clickthrough instructions, Azure CLI alternative commands, expected values to enter, expected outcome/screenshot description, and estimated cost. Include Quick Start section for local development without Azure, and total monthly cost estimation table.",
+    "Create docs/ARCHITECTURE.md documenting the v4.0 system architecture: frontend (Next.js on Static Web Apps), backend (Azure Functions), database (Azure SQL), AI services (OpenAI + AI Search), storage (Blob), auth (Entra ID B2C), with a text-based architecture diagram showing data flow",
+    "Replace .github/workflows/azure-static-web-apps-thankful-tree-0162cfc00.yml with updated deploy-frontend.yml workflow that: triggers on push to main, installs pnpm, runs pnpm install and pnpm build in frontend/ directory, deploys the frontend/.next/standalone output to Azure Static Web Apps"
+  ],
+  "acceptance_criteria": [
+    "docs/AZURE_SETUP_GUIDE.md exists with all 11 steps, each with Portal + CLI instructions",
+    "docs/AZURE_SETUP_GUIDE.md includes cost estimation table and Quick Start section",
+    "docs/ARCHITECTURE.md exists with system architecture documentation",
+    ".github/workflows/deploy-frontend.yml exists and references frontend/ as app_location",
+    "Old workflow file azure-static-web-apps-thankful-tree-0162cfc00.yml is removed or replaced"
+  ],
+  "verification": [
+    "Run: cat docs/AZURE_SETUP_GUIDE.md | head -50 to verify structure",
+    "Run: cat docs/ARCHITECTURE.md | head -30 to verify it exists",
+    "Run: cat .github/workflows/deploy-frontend.yml to verify workflow syntax",
+    "Run: ls .github/workflows/ to confirm old workflow is replaced"
+  ],
+  "blocked_reason": null,
+  "findings": "All three deliverables created successfully. AZURE_SETUP_GUIDE.md has 763 lines with all 11 steps including Portal and CLI instructions plus cost estimation table. ARCHITECTURE.md has 299 lines with mermaid diagram, text-based diagram, component details, data flows, and directory structure. deploy-frontend.yml uses Node.js 22, pnpm 10, builds frontend then deploys with skip_app_build:true since we pre-build. Old workflow was removed (git tracked as a rename due to similar content). Frontend build passes with all 13 routes."
+}

@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-010",
+  "type": "chore",
+  "description": "Update README.md and index.html to reflect the new notebook structure, new features, and updated statistics (10,000 data points, 8 notebooks, proper ML models).",
+  "status": "completed",
+  "steps": [
+    "Update /projects/sandbox/geoumkm-smart-3/README.md: Change description to reflect new system targeting Bank, Government, and Investor. Update notebook list to 8 new notebooks with descriptions. Update technology stack (remove PySpark/Synapse references for notebook execution, keep Azure references for deployment). Update statistics: 10,000 UMKM, 627 kecamatan, 27 kabupaten. Add sections for each stakeholder (Bank: credit risk model, Government: priority areas + policy simulation, Investor: opportunity scoring). Update folder structure to include data/ and models/ directories. Keep the Dicoding/METC references.",
+    "Update /projects/sandbox/geoumkm-smart-3/index.html: Update stats section (10,000 data points, 8 notebooks, 627 kecamatan, 3 target users). Update notebook grid to show all 8 new notebooks with correct names and descriptions. Update features section to include: ML Pipeline (XGBoost/LightGBM), Credit Risk Model, Clustering & Segmentation, Recommendation Engine, What-If Simulation, LLM/RIG Preparation. Update tech stack badges. Keep the Azure Static Web Apps references and Dicoding/METC branding.",
+    "Update the .gitignore to NOT ignore data/ directory files that are needed (add exceptions for data/*.csv or remove the blanket *.csv ignore and be more specific). Actually, since the generated data can be large, keep the .gitignore as-is but add a note in README that notebooks must be run to generate data.",
+    "Ensure docs/ directory links in index.html point to correct new notebook HTML names (01_Data_Foundation.html through 08_Executive_Summary.html)."
+  ],
+  "acceptance_criteria": [
+    "README.md accurately describes the new 8-notebook system",
+    "README.md mentions all 3 target users (Bank, Government, Investor)",
+    "index.html displays 8 notebook cards with correct names",
+    "index.html stats show 10,000 data points",
+    "All links in index.html use correct notebook filenames"
+  ],
+  "verification": [
+    "Read README.md and confirm it references all 8 notebooks",
+    "Read index.html and confirm notebook cards match new structure",
+    "Verify no broken internal references: grep for old notebook names in index.html (should find none)"
+  ],
+  "blocked_reason": null,
+  "findings": "Updated README.md and index.html successfully. All 8 notebooks referenced with correct names. Stats updated to 10,000/596/27. Tech stack updated to remove PySpark/Synapse and add XGBoost/LightGBM/SHAP/scikit-learn. Three target users (Bank, Government, Investor) mentioned in both files. Dicoding meta tag and METC branding preserved. No old notebook references remain."
+}

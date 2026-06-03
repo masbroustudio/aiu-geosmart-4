@@ -1,0 +1,36 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Create Notebook 03: Location Scoring Model (for UMKM & Government). A proper ML pipeline with train/test split, multiple models, hyperparameter tuning, and SHAP explanations. Predicts skor_potensi (regression).",
+  "status": "completed",
+  "steps": [
+    "Create /projects/sandbox/geoumkm-smart-3/notebooks/03_Location_Scoring_Model.ipynb using nbformat",
+    "SECTION 1 - Load & Prepare Data: Read data/umkm_engineered.csv. Define feature matrix X (all numeric features except targets) and target y (skor_potensi). Handle any missing values.",
+    "SECTION 2 - Train/Test Split: Stratified split by kabupaten_kota (80/20). Print distribution of kabupaten in train and test to confirm stratification.",
+    "SECTION 3 - Baseline Model: Simple linear regression as baseline. Report RMSE, MAE, R2 on test set.",
+    "SECTION 4 - Model Training: Train multiple models: (a) Random Forest Regressor, (b) XGBoost Regressor, (c) LightGBM Regressor, (d) Gradient Boosting Regressor. Use default hyperparameters first.",
+    "SECTION 5 - Cross-Validation: 5-fold cross-validation for each model. Report mean and std of RMSE, MAE, R2 across folds. Comparison table of all models.",
+    "SECTION 6 - Hyperparameter Tuning: Use RandomizedSearchCV for the best 2 models. XGBoost params: n_estimators (100-500), max_depth (3-10), learning_rate (0.01-0.3), subsample (0.6-1.0). LightGBM params: n_estimators (100-500), num_leaves (20-100), learning_rate (0.01-0.3). Report best parameters found.",
+    "SECTION 7 - Final Model Evaluation: Train best model on full training set with tuned params. Evaluate on test set: RMSE, MAE, R2, explained variance. Residual analysis: residual plot, Q-Q plot of residuals. Prediction vs Actual scatter plot.",
+    "SECTION 8 - Feature Importance & SHAP: Built-in feature importance (top 20 features bar chart). SHAP summary plot (beeswarm). SHAP dependence plots for top 3 features. Interpretation: which features drive location potential.",
+    "SECTION 9 - Model for Government Use: Generate location potential rankings by kecamatan. Identify bottom 15 kecamatan (priority for government intervention). Generate recommendations based on feature gaps (e.g., if infrastructure is the limiting factor, recommend infra investment).",
+    "SECTION 10 - Save Model & Results: Save best model to models/location_scoring_model.joblib. Save predictions to data/location_scores_predicted.csv. Save government priority list to data/government_priority_kecamatan.csv.",
+    "All sections must have rich markdown explanations of methodology and interpretation."
+  ],
+  "acceptance_criteria": [
+    "Notebook executes end-to-end without errors",
+    "At least 4 models are trained and compared",
+    "Cross-validation results show R2 > 0.7 for best model (since skor_potensi was generated from features)",
+    "models/location_scoring_model.joblib exists after execution",
+    "data/location_scores_predicted.csv exists with predictions",
+    "data/government_priority_kecamatan.csv lists bottom 15 kecamatan",
+    "SHAP values are computed and visualized"
+  ],
+  "verification": [
+    "Execute the notebook: jupyter nbconvert --to notebook --execute notebooks/03_Location_Scoring_Model.ipynb --ExecutePreprocessor.timeout=600 --output executed_03.ipynb --output-dir /tmp/",
+    "Check model file: python -c \"import joblib; model = joblib.load('models/location_scoring_model.joblib'); print(f'Model type: {type(model).__name__}')\"",
+    "Check predictions: python -c \"import pandas as pd; df = pd.read_csv('data/location_scores_predicted.csv'); print(f'Rows: {len(df)}'); assert len(df) > 0\""
+  ],
+  "blocked_reason": null,
+  "findings": "Notebook executes successfully in under 15 minutes. Critical finding: n_jobs=-1 causes deadlocks in this sandbox environment - must use n_jobs=1 for all sklearn parallel operations (cross_validate, RandomizedSearchCV, RandomForest). The model achieves R2>0.99 because skor_potensi was derived from these same features in Notebook 01. XGBoost was selected as best model after hyperparameter tuning. Outputs: models/location_scoring_model.joblib (XGBRegressor), data/location_scores_predicted.csv (2000 rows), data/government_priority_kecamatan.csv (15 rows). SHAP TreeExplainer works without issues on the XGBoost model. Use python3 for all commands."
+}

@@ -1,0 +1,37 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Create Notebook 01: Data Foundation & Realistic Synthetic Generation. This is the most critical notebook - it generates 10,000 UMKM data points with REAL Jawa Barat geography (627 kecamatan across 27 kabupaten/kota) and NO circular logic. Features determine the target, not the other way around.",
+  "status": "completed",
+  "steps": [
+    "Create the notebook as /projects/sandbox/geoumkm-smart-3/notebooks/01_Data_Foundation.ipynb using nbformat (nbformat.v4)",
+    "SECTION 1 - Geography Reference Data: Create a comprehensive dictionary of all 27 kabupaten/kota in Jawa Barat with their approximate centroid coordinates. The full list: Kab. Bandung (-6.98, 107.59), Kota Bandung (-6.91, 107.61), Kab. Bogor (-6.59, 106.79), Kota Bogor (-6.60, 106.80), Kab. Bekasi (-6.24, 107.00), Kota Bekasi (-6.24, 106.99), Kota Depok (-6.40, 106.82), Kab. Tasikmalaya (-7.35, 108.22), Kota Tasikmalaya (-7.33, 108.22), Kab. Cirebon (-6.71, 108.56), Kota Cirebon (-6.73, 108.55), Kab. Sukabumi (-6.92, 106.93), Kota Sukabumi (-6.92, 106.93), Kab. Garut (-7.22, 107.90), Kab. Ciamis (-7.33, 108.35), Kab. Kuningan (-6.97, 108.48), Kab. Majalengka (-6.84, 108.23), Kab. Sumedang (-6.86, 107.92), Kab. Indramayu (-6.33, 108.32), Kab. Subang (-6.57, 107.76), Kab. Purwakarta (-6.55, 107.43), Kab. Karawang (-6.32, 107.30), Kab. Pangandaran (-7.68, 108.65), Kab. Bandung Barat (-6.86, 107.46), Kota Cimahi (-6.87, 107.54), Kota Banjar (-7.37, 108.54)",
+    "SECTION 1 continued - Kecamatan Generation: For each kabupaten/kota, generate realistic kecamatan names. Use a curated list of real kecamatan names from each kabupaten (at minimum 15-30 per kabupaten for larger ones, 5-10 for kota). Generate coordinate offsets from kabupaten centroid (within 0.05-0.15 degrees). Target: ~627 total kecamatan entries.",
+    "SECTION 2 - Demographic Features (generated from geography): populasi (5000-500000, higher in urban areas near Bandung/Bekasi/Depok), kepadatan_penduduk (based on populasi and area), income_per_kapita (higher in Kota areas, Bandung metro, Bekasi-Depok corridor). Use log-normal distributions.",
+    "SECTION 3 - Infrastructure Features: jarak_ke_jalan_utama (km, lower in urban), jarak_ke_pasar (km), akses_internet_pct (higher in urban, 30-95%), skor_infrastruktur (composite 0-100). These correlate with urbanization level.",
+    "SECTION 4 - Competition Features: jumlah_kompetitor_radius_3km (based on kepadatan_penduduk, higher density = more competitors). Range 0-50.",
+    "SECTION 5 - Financial Access Features: jarak_ke_bank_terdekat (km, lower in urban), penetrasi_kur_pct (percentage of UMKM with KUR credit, varies 5-45%).",
+    "SECTION 6 - Risk Features: risiko_banjir (0-1, HIGHER for northern coastal: Indramayu, Karawang, Bekasi, Subang), risiko_gempa (0-1, HIGHER for southern: Garut, Tasikmalaya, Pangandaran, Ciamis, Sukabumi). Based on actual hazard zones.",
+    "SECTION 7 - Business Features: Generate 10,000 UMKM records. Each UMKM has: jenis_usaha (Makanan/Fashion/Kerajinan/Jasa/Pertanian with realistic proportions ~40%/20%/15%/15%/10%), tahun_berdiri (2010-2024), jumlah_karyawan (1-50, right-skewed), has_digital_presence (boolean, higher in urban), omset_bulanan (based on jenis_usaha, location quality, and age - NOT from score).",
+    "SECTION 8 - Target Variable Generation (NO CIRCULAR LOGIC): Generate is_survived_3yr (binary) as a function of features using a known logistic relationship. Higher survival probability when: good infrastructure + low competition + higher income area + not in high-risk zone + has digital presence + older business. Use a logistic function with known coefficients, add noise. Expected survival rate ~65-70%.",
+    "SECTION 9 - Location Potential Score (skor_potensi): Generate as a DERIVED metric using a weighted combination of normalized features (infra, demography, financial access, inverse risk, inverse competition). This is NOT a random number - it's computed from features. Range 0-100.",
+    "SECTION 10 - Save outputs: Save kecamatan reference data to data/kecamatan_reference.csv. Save full UMKM dataset to data/umkm_dataset.csv (and .parquet). Print summary statistics and data quality checks.",
+    "Include rich markdown cells explaining each section, the rationale for distributions chosen, and why the approach avoids circular logic."
+  ],
+  "acceptance_criteria": [
+    "Notebook executes end-to-end without errors",
+    "data/kecamatan_reference.csv contains ~627 rows with columns: kabupaten_kota, kecamatan, latitude, longitude, is_kota (boolean)",
+    "data/umkm_dataset.csv contains 10,000 rows with all required columns",
+    "No circular logic: skor_potensi is computed FROM features, is_survived_3yr is generated FROM features using a known relationship",
+    "Geographic coordinates are within Jawa Barat bounds (lat -7.8 to -6.0, lon 106.3 to 108.8)",
+    "All kecamatan names are realistic (not 'Kecamatan 1', 'Kecamatan 2')",
+    "Risk features correlate with actual geographic risk zones (northern = flood, southern = earthquake)"
+  ],
+  "verification": [
+    "Execute the notebook: jupyter nbconvert --to notebook --execute notebooks/01_Data_Foundation.ipynb --ExecutePreprocessor.timeout=300 --output executed_01.ipynb --output-dir /tmp/",
+    "Check outputs exist: python -c \"import pandas as pd; df = pd.read_csv('data/umkm_dataset.csv'); print(f'Rows: {len(df)}, Cols: {len(df.columns)}'); assert len(df) == 10000\"",
+    "Check no circular logic: python -c \"import pandas as pd; df = pd.read_csv('data/umkm_dataset.csv'); print(df[['skor_potensi','omset_bulanan','risiko_banjir']].corr())\""
+  ],
+  "blocked_reason": null,
+  "findings": "Notebook executes successfully generating 596 kecamatan (close to target 627, above 500 minimum) and 10,000 UMKM records with 24 columns. Survival rate achieved: 68% (within 65-70% target). Data files are saved to ../data/ relative to the notebook (data/ from project root). The .gitignore excludes .csv files so data must be regenerated by executing the notebook. Use python3 (not python) for all commands. The notebook CWD during execution is the notebooks/ directory, so all relative paths use ../ to reach project root."
+}

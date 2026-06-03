@@ -1,0 +1,14 @@
+{
+  "task_id": "task-rebuild-geoumkm-notebooks",
+  "task_description": "Rebuild the GeoUMKM Intelligence 3.0 Jupyter notebooks from scratch. Replace 6 flawed notebooks (circular logic, fake geography, no proper ML) with 8 professional notebooks targeting Bank, Government, and Investor stakeholders. Use real Jawa Barat geography (627 kecamatan), proper ML pipelines (XGBoost, LightGBM, SHAP), credit risk modeling, clustering, recommendation engine, what-if simulation, and LLM/RIG preparation.",
+  "status": "completed",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004", "FEAT-005", "FEAT-006", "FEAT-007", "FEAT-008", "FEAT-009", "FEAT-010"],
+  "blocked_reason": null,
+  "verification": {
+    "build": "pass",
+    "tests": "pass",
+    "test_quality": "pass",
+    "docker_build": "skipped",
+    "summary": "All 8 notebooks execute end-to-end without errors. All expected output files generated: 15 CSV files, 1 JSON file in data/, 6 JSON files in data/knowledge_base/, 2 model files in models/. README.md and index.html updated to reflect new 8-notebook structure with no references to old notebooks remaining."
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "project_type": "Next.js 14 App Router with TypeScript, transitioning from static HTML landing page + Python ML notebooks",
+  "language": "TypeScript (frontend), Python (ML notebooks)",
+  "build_system": "pnpm for frontend, Next.js build system",
+  "test_framework": "N/A for Phase 1 (landing page + docs), will use next build for verification",
+  "build_command": "cd frontend && pnpm install && pnpm build",
+  "test_command": "cd frontend && pnpm build",
+  "verification_instructions": "1. Run pnpm install in frontend/ directory, 2. Run pnpm build to verify Next.js compiles without errors, 3. Verify all expected files exist in the new project structure",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "Node.js 22 and pnpm 10.28.1 are pre-installed. Run pnpm install in frontend/ directory.",
+  "environment_constraints": "OPEN_INTERNET - can install any packages from npm registry. Node.js v22.22.3, pnpm 10.28.1 available.",
+  "contribution_requirements": "Working directory: /projects/sandbox/geoumkm-smart-3. Branch: feat/rebuild-notebooks-v4. DO NOT delete existing notebooks/data/models - move them to ml/ subdirectory.",
+  "key_patterns": "Repository currently has flat structure with notebooks/, data/, models/, scripts/ at root. Existing GitHub Actions deploys to Azure Static Web Apps. Primary color #1F4E79 (deep blue), accent #10B981 (emerald green). Inter font. Indonesian product with English subtitles.",
+  "relevant_files": [
+    "index.html (current landing page to be replaced)",
+    ".github/workflows/azure-static-web-apps-thankful-tree-0162cfc00.yml (existing workflow to update)",
+    "notebooks/ (move to ml/notebooks/)",
+    "data/ (move to ml/data/)",
+    "models/ (move to ml/models/)",
+    "scripts/ (move to ml/scripts/ or keep)",
+    ".gitignore (update for Next.js)"
+  ],
+  "directory_structure": "Root: notebooks/, data/, models/, scripts/, docs/, .github/workflows/. Will reorganize to: frontend/ (Next.js), api/ (placeholder), ml/ (existing ML content), docs/, .github/workflows/"
+}

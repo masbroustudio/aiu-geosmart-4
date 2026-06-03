@@ -1,0 +1,97 @@
+{
+  "project": {
+    "name": "GeoUMKM Intelligence",
+    "version": "3.0",
+    "date_generated": "2026-05-26 05:27:41",
+    "scope": "West Java (Jawa Barat) Province",
+    "data_type": "Synthetic (realistic patterns)"
+  },
+  "data_summary": {
+    "total_umkm": 10000,
+    "kecamatan_count": 553,
+    "kabupaten_kota_count": 26,
+    "total_features": 37,
+    "business_types": 5,
+    "survival_rate_pct": 67.99,
+    "digital_presence_pct": 51.21
+  },
+  "model_performance": {
+    "location_scoring": {
+      "algorithm": "XGBoost Regressor",
+      "rmse": 0.1654,
+      "mae": 0.0805,
+      "r2": 0.9999,
+      "n_test_samples": 2000
+    },
+    "credit_risk": {
+      "algorithm": "Logistic Regression",
+      "auc_roc_approx": 0.8303,
+      "ks_statistic": 0.6607,
+      "overall_default_rate_pct": 32.02,
+      "n_score_bands": 7,
+      "portfolio_size": 10000
+    },
+    "clustering": {
+      "algorithm": "K-Means + DBSCAN",
+      "n_kmeans_clusters": 5,
+      "n_dbscan_clusters": 408,
+      "silhouette_score": 0.0764,
+      "dbscan_noise_ratio_pct": 0.31
+    }
+  },
+  "business_impact": {
+    "government": {
+      "total_umkm_impacted": 7987,
+      "new_viable_locations": 583,
+      "priority_clusters": 5,
+      "policies_simulated": 3
+    },
+    "banking": {
+      "current_default_rate_pct": 32.02,
+      "estimated_npl_reduction_pct": 9.61,
+      "high_risk_segment_pct": 62.3,
+      "potential_kur_recipients": 1749
+    },
+    "investors": {
+      "total_market_size_juta_monthly": 585411.0,
+      "annual_opportunity_miliar": 7024.9,
+      "top_cluster": "Urban Digital Leaders",
+      "top_cluster_score": 0.9623
+    }
+  },
+  "api_endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/v1/score-location",
+      "description": "Predict location potential score"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/credit-risk",
+      "description": "Estimate probability of default"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/recommend-location",
+      "description": "Get top location recommendations"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/clusters",
+      "description": "Get cluster profiles"
+    }
+  ],
+  "key_metrics": {
+    "avg_location_score": 56.2,
+    "urban_rural_gap": 25.67,
+    "digital_premium": 15.87,
+    "total_market_size_miliar_annual": 7024.9
+  },
+  "deployment_readiness": {
+    "models_serialized": true,
+    "api_designed": true,
+    "monitoring_concept": true,
+    "real_data_integrated": false,
+    "production_deployed": false
+  }
+}

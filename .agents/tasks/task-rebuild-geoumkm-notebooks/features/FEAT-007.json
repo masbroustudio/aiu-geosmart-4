@@ -1,0 +1,32 @@
+{
+  "id": "FEAT-007",
+  "type": "feat",
+  "description": "Create Notebook 06: Recommendation Engine & What-If Simulation. Content-based location recommendations, what-if simulations using trained models, counterfactual explanations, and policy simulation.",
+  "status": "completed",
+  "steps": [
+    "Create /projects/sandbox/geoumkm-smart-3/notebooks/06_Recommendation_WhatIf.ipynb using nbformat",
+    "SECTION 1 - Load Models & Data: Load models/location_scoring_model.joblib and models/credit_risk_model.joblib. Read data/umkm_clustered.csv and data/kecamatan_reference.csv.",
+    "SECTION 2 - Content-Based Location Recommendation: For a given UMKM profile (jenis_usaha, target omset, number of employees), find the top 10 most similar SUCCESSFUL locations. Similarity metric: cosine similarity on normalized feature vectors of successful UMKMs (is_survived_3yr==1 AND skor_potensi > 70). Present recommendations with: kecamatan, kabupaten, predicted score, key features, reason for match.",
+    "SECTION 3 - Kecamatan-Level Recommendation: Aggregate UMKM data to kecamatan level. For each jenis_usaha, rank kecamatan by: predicted success score, low competition, good infrastructure. Present top 10 kecamatan per jenis_usaha with explanations.",
+    "SECTION 4 - What-If Simulation: Use the trained location scoring model. Create interactive-style scenarios: (a) 'What if infrastructure improves by 20% in Garut?' - predict new scores. (b) 'What if a new bank branch opens in Pangandaran?' - reduce jarak_ke_bank, predict impact. (c) 'What if internet coverage reaches 80% in Ciamis?' - predict impact. Show before/after comparison for each scenario.",
+    "SECTION 5 - Counterfactual Explanations: For UMKMs with low scores (bottom 20%), find the minimum feature changes needed to reach skor > 70. Algorithm: iteratively adjust features toward the mean of successful UMKMs, re-predict until threshold met. Present: 'To improve from score 45 to 70, this UMKM would need: +15 infra score, +20% internet access, -2 competitors'.",
+    "SECTION 6 - Policy Simulation (Government): Simulate government interventions: (a) KUR expansion: increase penetrasi_kur by 20% in priority areas, predict impact on survival. (b) Infrastructure investment: increase skor_infra by 30 in bottom kecamatan. (c) Digital training program: set has_digital_presence=1 for 50% of non-digital UMKMs. For each: compute aggregate impact (number of UMKMs improved, average score change, estimated additional survivors).",
+    "SECTION 7 - Investment Scenario Modeling: For investors: (a) 'If I invest in digital infrastructure in cluster X, what is the expected improvement?' (b) Market entry analysis: 'Which underserved kecamatan have high potential but low competition?' (c) Portfolio diversification: recommend mix of locations across risk profiles.",
+    "SECTION 8 - Save Results: Save data/recommendations_by_kecamatan.csv. Save data/whatif_simulation_results.csv. Save data/policy_impact_estimates.csv.",
+    "Include markdown cells explaining methodology, limitations of simulations, and caveats about synthetic data."
+  ],
+  "acceptance_criteria": [
+    "Notebook executes end-to-end without errors",
+    "Location recommendations produce top 10 results for at least 3 jenis_usaha",
+    "What-if simulations show before/after scores for at least 3 scenarios",
+    "Counterfactual explanations identify actionable feature changes",
+    "Policy simulations quantify impact (number of improved UMKMs, score changes)",
+    "Output CSVs are created in data/ directory"
+  ],
+  "verification": [
+    "Execute the notebook: jupyter nbconvert --to notebook --execute notebooks/06_Recommendation_WhatIf.ipynb --ExecutePreprocessor.timeout=600 --output executed_06.ipynb --output-dir /tmp/",
+    "Check outputs: python -c \"import pandas as pd; rec = pd.read_csv('data/recommendations_by_kecamatan.csv'); print(f'Recommendations: {len(rec)} rows'); assert len(rec) > 0\""
+  ],
+  "blocked_reason": null,
+  "findings": "Notebook executes successfully end-to-end. Location model (XGBRegressor) uses 27 features from feature_names_in_. Credit model (LogisticRegression) uses 23 features (from notebook 04 training). Output CSVs: recommendations_by_kecamatan.csv (50 rows, 5 business types x 10 kecamatan), whatif_simulation_results.csv (3 scenarios), policy_impact_estimates.csv (3 policies). Content-based recommendations use cosine similarity on MinMaxScaler-normalized features. What-if simulations recompute derived features (infra_x_income, digital_readiness_index, etc.) when base features change. Used python3, seaborn-v0_8-whitegrid style. Scripts in scripts/ directory for reproducible notebook generation."
+}

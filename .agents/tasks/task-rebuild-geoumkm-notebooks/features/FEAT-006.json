@@ -1,0 +1,35 @@
+{
+  "id": "FEAT-006",
+  "type": "feat",
+  "description": "Create Notebook 05: Clustering & Segmentation (for Government & Investor). Multi-feature clustering using K-Means and DBSCAN, with cluster profiling, government priority scoring, and investment opportunity analysis.",
+  "status": "completed",
+  "steps": [
+    "Create /projects/sandbox/geoumkm-smart-3/notebooks/05_Clustering_Segmentation.ipynb using nbformat",
+    "SECTION 1 - Load Data: Read data/umkm_engineered.csv. Select clustering features (NOT just lat/lon): skor_infrastruktur, income_per_kapita, kepadatan_penduduk, jumlah_kompetitor_radius_3km, omset_bulanan, penetrasi_kur_pct, akses_internet_pct, risiko_banjir, risiko_gempa, has_digital_presence, business_maturity. Normalize features using StandardScaler.",
+    "SECTION 2 - Optimal K Selection: Elbow method (inertia vs k, k=2 to 15). Silhouette score analysis for each k. Calinski-Harabasz index. Plot all three metrics. Select optimal k (likely 5-8).",
+    "SECTION 3 - K-Means Clustering: Apply K-Means with optimal k. Assign cluster labels. Visualize clusters in 2D using PCA (first 2 components). Show cluster sizes.",
+    "SECTION 4 - DBSCAN Spatial Clustering: Use lat/lon + density features for DBSCAN. Tune eps using k-distance plot. Identify noise points. Compare with K-Means results. Visualize spatial clusters on coordinate scatter.",
+    "SECTION 5 - Cluster Profiling: For each K-Means cluster compute: mean of all features, dominant jenis_usaha, dominant kabupaten, survival rate, average skor_potensi, average omset. Create radar/spider charts for cluster comparison. Name clusters descriptively (e.g., 'Urban Digital Leaders', 'Rural Traditional', 'High-Risk Coastal').",
+    "SECTION 6 - Government Priority Scoring: For each cluster: compute priority_score = f(low_infra, low_income, high_risk, low_survival). Rank clusters by intervention priority. For each priority cluster: identify specific gaps, recommend targeted interventions (KUR expansion, infrastructure, digital training). Generate budget allocation recommendation.",
+    "SECTION 7 - Investment Opportunity Scoring: For each cluster: compute investment_score = f(high_growth_potential, low_competition, good_infra, high_survival). Rank clusters by investment attractiveness. For each attractive cluster: estimate market size, growth trajectory, risk-adjusted return. Generate investor pitch points.",
+    "SECTION 8 - Geographic Visualization: Plot clusters on map (lat/lon scatter colored by cluster). Show cluster boundaries. Overlay with kabupaten boundaries concept.",
+    "SECTION 9 - Save Results: Save data/umkm_clustered.csv (dataset with cluster labels). Save data/cluster_profiles.csv (cluster statistics). Save data/government_priority_clusters.csv. Save data/investment_opportunity_clusters.csv.",
+    "Rich markdown explaining business relevance of each cluster for different stakeholders."
+  ],
+  "acceptance_criteria": [
+    "Notebook executes end-to-end without errors",
+    "Elbow method and silhouette plots are generated",
+    "K-Means produces meaningful clusters (not all same size)",
+    "DBSCAN identifies spatial density clusters and noise points",
+    "Each cluster has a descriptive profile",
+    "Government priority scores rank clusters with actionable recommendations",
+    "Investment opportunity scores provide investor-relevant metrics",
+    "All output CSVs are created in data/ directory"
+  ],
+  "verification": [
+    "Execute the notebook: jupyter nbconvert --to notebook --execute notebooks/05_Clustering_Segmentation.ipynb --ExecutePreprocessor.timeout=600 --output executed_05.ipynb --output-dir /tmp/",
+    "Check outputs: python -c \"import pandas as pd; df = pd.read_csv('data/umkm_clustered.csv'); print(f'Clusters: {df[\\\"cluster_kmeans\\\"].nunique()}'); assert df['cluster_kmeans'].nunique() >= 4\""
+  ],
+  "blocked_reason": null,
+  "findings": "Notebook executes successfully end-to-end. K-Means produces 5 clusters (optimal_k=5 from silhouette analysis, with floor of 5 enforced). DBSCAN identifies spatial density clusters using lat/lon + density features with eps determined from k-distance plot. All 4 output CSVs generated: umkm_clustered.csv (10000 rows, 37 cols with cluster_kmeans, cluster_dbscan, cluster_name), cluster_profiles.csv (5 rows), government_priority_clusters.csv (5 rows), investment_opportunity_clusters.csv (5 rows). Cluster naming uses rule-based heuristics on profile medians. Radar charts use min-max normalization. Use python3 for commands. seaborn-v0_8-whitegrid style works for matplotlib."
+}

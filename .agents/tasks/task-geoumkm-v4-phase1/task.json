@@ -1,0 +1,14 @@
+{
+  "task_id": "task-geoumkm-v4-phase1",
+  "task_description": "GeoUMKM Intelligence v4.0 Phase 1: Reorganize project structure, build premium landing page with Next.js 14 + Tailwind + Framer Motion, create dashboard skeleton pages, write comprehensive Azure setup documentation, and update CI/CD workflow",
+  "status": "completed",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null,
+  "verification": {
+    "build": "pass",
+    "tests": "pass",
+    "test_quality": "pass",
+    "docker_build": "skipped",
+    "summary": "pnpm build passes successfully with all 13 routes compiled as static pages (landing, 7 dashboard pages, 2 auth pages, not-found). No TypeScript errors. All ML files preserved in ml/ subdirectory. Azure docs created (763 + 299 lines). CI/CD workflow updated for Next.js deployment."
+  }
+}

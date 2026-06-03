@@ -1,0 +1,33 @@
+{
+  "id": "FEAT-001",
+  "type": "chore",
+  "description": "Reorganize repository structure: move ML content to ml/ subdirectory, create new directory structure for v4.0 architecture, update .gitignore for Next.js",
+  "status": "completed",
+  "steps": [
+    "Create ml/ directory and move notebooks/, data/, models/, scripts/ into ml/ (e.g., ml/notebooks/, ml/data/, ml/models/, ml/scripts/)",
+    "Create the following empty directories: frontend/, api/, docs/assets/",
+    "Move existing docs/*.png files to docs/assets/",
+    "Create api/README.md with placeholder content explaining this will contain Azure Functions backend",
+    "Update .gitignore to add Next.js specific ignores (node_modules/, .next/, out/, .env.local) while preserving existing Python ignores",
+    "Remove the old index.html file (will be replaced by Next.js landing page)",
+    "Keep the existing .github/workflows/ directory (will be updated in FEAT-004)"
+  ],
+  "acceptance_criteria": [
+    "ml/notebooks/ contains all 8 .ipynb files",
+    "ml/data/ contains all CSV files and knowledge_base/",
+    "ml/models/ contains .joblib files",
+    "ml/scripts/ contains build scripts",
+    "docs/assets/ contains all .png files from docs/",
+    "api/README.md exists",
+    ".gitignore includes both Python and Next.js ignores",
+    "index.html is removed from root",
+    "No data is lost in the reorganization"
+  ],
+  "verification": [
+    "Run: ls ml/notebooks/ && ls ml/data/ && ls ml/models/ to confirm files were moved",
+    "Run: ls docs/assets/ to confirm PNGs moved",
+    "Run: cat .gitignore and verify it has both Python and Next.js sections"
+  ],
+  "blocked_reason": null,
+  "findings": "All moves done via git mv preserving history. CSV files in data/ are gitignored by *.csv pattern but were already tracked so remain in git. Root __pycache__ and scripts/__pycache__ were not tracked (already in .gitignore) so just removed from working tree. The .gitignore was reorganized with separate PYTHON and NODE.JS/NEXT.JS sections. node_modules/ was already in the old .gitignore under Azure section, moved to the Next.js section for clarity."
+}
