@@ -1,8 +1,18 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { getUmkmData } from "../data/loader.js";
+import { verifyToken } from "../middleware/verifyToken.js";
+import { logAudit, extractRequestInfo } from "../services/audit.js";
 
 async function handler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+  const startTime = Date.now();
+  const requestInfo = extractRequestInfo(request);
+  let userId: number | undefined;
+
   try {
+    // Verify authentication
+    const auth = await verifyToken(request, context);
+    userId = auth?.userId;
+
     const kabupaten = request.query.get("kabupaten") || undefined;
     const jenisUsaha = request.query.get("jenis_usaha") || undefined;
     const limit = parseInt(request.query.get("limit") || "20", 10);
@@ -33,6 +43,17 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
     const maxScore = totalFiltered > 0 ? Math.max(...data.map((d) => d.skor_potensi)) : 0;
     const minScore = totalFiltered > 0 ? Math.min(...data.map((d) => d.skor_potensi)) : 0;
 
+    await logAudit({
+      userId,
+      action: "score_view",
+      endpoint: requestInfo.endpoint,
+      method: requestInfo.method,
+      statusCode: 200,
+      responseTimeMs: Date.now() - startTime,
+      ipAddress: requestInfo.ipAddress,
+      userAgent: requestInfo.userAgent,
+    });
+
     return {
       status: 200,
       jsonBody: {
@@ -49,6 +70,18 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
     };
   } catch (error) {
     context.error("Error in score handler:", error);
+
+    await logAudit({
+      userId,
+      action: "score_error",
+      endpoint: requestInfo.endpoint,
+      method: requestInfo.method,
+      statusCode: 500,
+      responseTimeMs: Date.now() - startTime,
+      ipAddress: requestInfo.ipAddress,
+      userAgent: requestInfo.userAgent,
+    });
+
     return {
       status: 500,
       jsonBody: { success: false, error: "Internal server error" },
@@ -62,3 +95,4 @@ app.http("score", {
   route: "score",
   handler,
 });
+

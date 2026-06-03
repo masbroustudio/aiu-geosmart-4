@@ -1,6 +1,8 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { getKnowledgeBase } from "../data/loader.js";
 import { ChatMessage, ChatResponse, KnowledgeBaseEntry } from "../shared/types.js";
+import { verifyToken } from "../middleware/verifyToken.js";
+import { logAudit, extractRequestInfo } from "../services/audit.js";
 
 function findBestMatch(message: string, examples: KnowledgeBaseEntry[]): KnowledgeBaseEntry | null {
   const messageLower = message.toLowerCase();
@@ -56,11 +58,30 @@ function findBestMatch(message: string, examples: KnowledgeBaseEntry[]): Knowled
 }
 
 async function handler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+  const startTime = Date.now();
+  const requestInfo = extractRequestInfo(request);
+  let userId: number | undefined;
+
   try {
+    // Verify authentication
+    const auth = await verifyToken(request, context);
+    userId = auth?.userId;
+
     const body = (await request.json()) as ChatMessage;
     const { message, persona } = body;
 
     if (!message) {
+      await logAudit({
+        userId,
+        action: "chat_error",
+        endpoint: requestInfo.endpoint,
+        method: requestInfo.method,
+        statusCode: 400,
+        responseTimeMs: Date.now() - startTime,
+        ipAddress: requestInfo.ipAddress,
+        userAgent: requestInfo.userAgent,
+      });
+
       return {
         status: 400,
         jsonBody: { success: false, error: "Message is required" },
@@ -110,6 +131,18 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
       };
     }
 
+    await logAudit({
+      userId,
+      action: "chat_message",
+      endpoint: requestInfo.endpoint,
+      method: requestInfo.method,
+      statusCode: 200,
+      requestBody: JSON.stringify({ message, persona }),
+      responseTimeMs: Date.now() - startTime,
+      ipAddress: requestInfo.ipAddress,
+      userAgent: requestInfo.userAgent,
+    });
+
     return {
       status: 200,
       jsonBody: {
@@ -119,6 +152,18 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
     };
   } catch (error) {
     context.error("Error in chat handler:", error);
+
+    await logAudit({
+      userId,
+      action: "chat_error",
+      endpoint: requestInfo.endpoint,
+      method: requestInfo.method,
+      statusCode: 500,
+      responseTimeMs: Date.now() - startTime,
+      ipAddress: requestInfo.ipAddress,
+      userAgent: requestInfo.userAgent,
+    });
+
     return {
       status: 500,
       jsonBody: { success: false, error: "Internal server error" },
@@ -132,3 +177,4 @@ app.http("chat", {
   route: "chat",
   handler,
 });
+

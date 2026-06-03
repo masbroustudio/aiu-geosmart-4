@@ -1,8 +1,18 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { getRecommendations } from "../data/loader.js";
+import { verifyToken } from "../middleware/verifyToken.js";
+import { logAudit, extractRequestInfo } from "../services/audit.js";
 
 async function handler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+  const startTime = Date.now();
+  const requestInfo = extractRequestInfo(request);
+  let userId: number | undefined;
+
   try {
+    // Verify authentication
+    const auth = await verifyToken(request, context);
+    userId = auth?.userId;
+
     const jenisUsaha = request.query.get("jenis_usaha") || undefined;
     const kabupaten = request.query.get("kabupaten") || undefined;
     const limit = parseInt(request.query.get("limit") || "50", 10);
@@ -25,6 +35,17 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
     const sorted = [...data].sort((a, b) => b.recommendation_score - a.recommendation_score);
     const results = sorted.slice(0, limit);
 
+    await logAudit({
+      userId,
+      action: "recommendations_view",
+      endpoint: requestInfo.endpoint,
+      method: requestInfo.method,
+      statusCode: 200,
+      responseTimeMs: Date.now() - startTime,
+      ipAddress: requestInfo.ipAddress,
+      userAgent: requestInfo.userAgent,
+    });
+
     return {
       status: 200,
       jsonBody: {
@@ -40,6 +61,18 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
     };
   } catch (error) {
     context.error("Error in recommend handler:", error);
+
+    await logAudit({
+      userId,
+      action: "recommendations_error",
+      endpoint: requestInfo.endpoint,
+      method: requestInfo.method,
+      statusCode: 500,
+      responseTimeMs: Date.now() - startTime,
+      ipAddress: requestInfo.ipAddress,
+      userAgent: requestInfo.userAgent,
+    });
+
     return {
       status: 500,
       jsonBody: { success: false, error: "Internal server error" },
@@ -53,3 +86,4 @@ app.http("recommend", {
   route: "recommend",
   handler,
 });
+

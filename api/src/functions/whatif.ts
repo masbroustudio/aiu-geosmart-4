@@ -1,5 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { getWhatIfResults } from "../data/loader.js";
+import { verifyToken } from "../middleware/verifyToken.js";
+import { logAudit, extractRequestInfo } from "../services/audit.js";
 
 interface WhatIfRequest {
   infrastructure_improvement?: number;
@@ -10,7 +12,15 @@ interface WhatIfRequest {
 }
 
 async function handler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+  const startTime = Date.now();
+  const requestInfo = extractRequestInfo(request);
+  let userId: number | undefined;
+
   try {
+    // Verify authentication
+    const auth = await verifyToken(request, context);
+    userId = auth?.userId;
+
     const body = (await request.json()) as WhatIfRequest;
     const allScenarios = getWhatIfResults();
 
@@ -70,6 +80,18 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
       }
     }
 
+    await logAudit({
+      userId,
+      action: "whatif_scenario",
+      endpoint: requestInfo.endpoint,
+      method: requestInfo.method,
+      statusCode: 200,
+      requestBody: JSON.stringify(body),
+      responseTimeMs: Date.now() - startTime,
+      ipAddress: requestInfo.ipAddress,
+      userAgent: requestInfo.userAgent,
+    });
+
     return {
       status: 200,
       jsonBody: {
@@ -86,6 +108,18 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
     };
   } catch (error) {
     context.error("Error in whatif handler:", error);
+
+    await logAudit({
+      userId,
+      action: "whatif_error",
+      endpoint: requestInfo.endpoint,
+      method: requestInfo.method,
+      statusCode: 500,
+      responseTimeMs: Date.now() - startTime,
+      ipAddress: requestInfo.ipAddress,
+      userAgent: requestInfo.userAgent,
+    });
+
     return {
       status: 500,
       jsonBody: { success: false, error: "Internal server error" },
@@ -99,3 +133,4 @@ app.http("whatif", {
   route: "whatif",
   handler,
 });
+
