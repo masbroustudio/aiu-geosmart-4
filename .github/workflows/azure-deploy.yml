@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - "frontend/**"
+      - "api/**"
       - ".github/workflows/azure-deploy.yml"
   pull_request:
     branches: [main]
     paths:
       - "frontend/**"
+      - "api/**"
       - ".github/workflows/azure-deploy.yml"
 
 jobs:
