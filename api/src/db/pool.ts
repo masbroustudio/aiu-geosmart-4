@@ -1,25 +1,99 @@
-// For MVP: Using mock database. Replace with PostgreSQL for production.
-// Set DB_TYPE=postgres environment variable to use real database.
+import pg from 'pg';
+import * as fs from 'fs';
+import * as path from 'path';
 
-import { mockDb } from './mock.js';
-
+const { Pool } = pg;
 let pool: any = null;
 
 export const getPool = () => {
   if (!pool) {
-    pool = { mock: true };
-    console.log('Using mock database for MVP');
+    if (process.env.DB_TYPE === 'postgres' || process.env.DATABASE_URL) {
+      console.log('Initializing real PostgreSQL Connection Pool');
+      const connectionString = process.env.DATABASE_URL;
+      
+      const config: any = connectionString 
+        ? { connectionString }
+        : {
+            host: process.env.PGHOST || 'localhost',
+            user: process.env.PGUSER || 'postgres',
+            password: process.env.PGPASSWORD || 'postgres',
+            database: process.env.PGDATABASE || 'geoumkm',
+            port: parseInt(process.env.PGPORT || '5432'),
+          };
+      
+      // Azure Database for PostgreSQL usually requires SSL
+      if (process.env.PGSSLMODE !== 'disable') {
+        config.ssl = { rejectUnauthorized: false };
+      }
+      
+      pool = new Pool(config);
+      
+      // Trigger schema initialization asynchronously
+      initializeDatabase().catch((err) => {
+        console.error('Async initializeDatabase failed:', err);
+      });
+    } else {
+      pool = { mock: true };
+      console.log('Using mock database for MVP');
+    }
   }
   return pool;
 };
 
 export const query = async (text: string, params?: any[]) => {
-  // Mock database - return empty result for now
-  // In production, this would connect to PostgreSQL
-  console.log('Query (mock):', text);
-  return { rows: [], rowCount: 0 };
+  const p = getPool();
+  if (p.mock) {
+    console.log('Query (mock):', text);
+    return { rows: [], rowCount: 0 };
+  }
+  return p.query(text, params);
 };
 
 export const closePool = async (): Promise<void> => {
+  if (pool && typeof pool.end === 'function') {
+    await pool.end();
+  }
   pool = null;
 };
+
+export const initializeDatabase = async () => {
+  const p = getPool();
+  if (p.mock) {
+    console.log('Database initialization skipped in mock mode');
+    return;
+  }
+  
+  // Try multiple paths to find schema.sql
+  const possiblePaths = [
+    path.resolve(__dirname, 'schema.sql'),
+    path.resolve(__dirname, '../../../src/db/schema.sql'),
+    path.resolve(__dirname, '../../src/db/schema.sql'),
+    path.resolve(process.cwd(), 'src/db/schema.sql'),
+    path.resolve(process.cwd(), 'db/schema.sql'),
+  ];
+  
+  let schemaSql = '';
+  for (const schemaPath of possiblePaths) {
+    if (fs.existsSync(schemaPath)) {
+      try {
+        schemaSql = fs.readFileSync(schemaPath, 'utf8');
+        console.log(`Found schema.sql at: ${schemaPath}`);
+        break;
+      } catch (err) {
+        console.warn(`Failed to read schema.sql at ${schemaPath}:`, err);
+      }
+    }
+  }
+  
+  if (schemaSql) {
+    try {
+      await p.query(schemaSql);
+      console.log('PostgreSQL schema initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize PostgreSQL schema:', error);
+    }
+  } else {
+    console.warn('Could not locate schema.sql in any of the search paths:', possiblePaths);
+  }
+};
+

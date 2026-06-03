@@ -1,22 +1,24 @@
 'use client';
-
+ 
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import { useRouter } from 'next/navigation';
 import 'leaflet/dist/leaflet.css';
-
+ 
 interface MapInnerProps {
   data: { kecamatan: string; kabupaten: string; lat: number; lng: number; score: number }[];
+  visualizationMode?: 'pin' | 'heatmap';
 }
-
+ 
 function getColor(score: number): string {
   if (score < 40) return '#EF4444';
   if (score < 60) return '#F59E0B';
   if (score < 75) return '#FCD34D';
   return '#10B981';
 }
-
-export default function MapInner({ data }: MapInnerProps) {
+ 
+export default function MapInner({ data, visualizationMode = 'pin' }: MapInnerProps) {
   const router = useRouter();
+  const isHeatmap = visualizationMode === 'heatmap';
 
   return (
     <MapContainer
@@ -33,12 +35,12 @@ export default function MapInner({ data }: MapInnerProps) {
         <CircleMarker
           key={index}
           center={[item.lat, item.lng]}
-          radius={8}
+          radius={isHeatmap ? 30 : 8}
           fillColor={getColor(item.score)}
           color={getColor(item.score)}
-          weight={2}
-          opacity={0.8}
-          fillOpacity={0.6}
+          weight={isHeatmap ? 0 : 2}
+          opacity={isHeatmap ? 0.05 : 0.8}
+          fillOpacity={isHeatmap ? 0.25 : 0.6}
           pathOptions={{ className: 'cursor-pointer' }}
           eventHandlers={{
             click: () => {

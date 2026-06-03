@@ -23,6 +23,7 @@ function formatRupiah(value: number): string {
 export default function PortfolioAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [showStress, setShowStress] = useState(false);
+  const [shockPercent, setShockPercent] = useState(30);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 500);
@@ -53,6 +54,14 @@ export default function PortfolioAnalyticsPage() {
       </div>
     );
   }
+
+  const baseEL = portfolioData.stressTest.baseExpectedLoss;
+  const stressedEL = showStress ? baseEL * (1 + shockPercent / 100) : baseEL;
+  const additionalLoss = stressedEL - baseEL;
+  const basePD = portfolioData.weightedAvgPD;
+  const stressedPD = showStress 
+    ? parseFloat(Math.min(100, basePD * (1 + shockPercent / 100)).toFixed(1)) 
+    : basePD;
 
   return (
     <div className="space-y-6 mt-12 lg:mt-0">
@@ -235,43 +244,74 @@ export default function PortfolioAnalyticsPage() {
       </div>
 
       {/* Stress Test */}
-      <div className="glass-card p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="glass-card p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-white">Stress Test</h3>
-            <p className="text-xs text-slate-400 mt-1">Skenario: Default rate naik {portfolioData.stressTest.changePercent}%</p>
+            <h3 className="text-lg font-semibold text-white">Simulasi Stress Test Portofolio</h3>
+            <p className="text-xs text-slate-400 mt-1">
+              {showStress 
+                ? `Kondisi stres: Probabilitas gagal bayar (PD) naik +${shockPercent}%` 
+                : "Uji ketahanan portofolio terhadap guncangan makroekonomi"}
+            </p>
           </div>
           <button
             onClick={() => setShowStress(!showStress)}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
               showStress
                 ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                : 'bg-primary text-white hover:bg-primary-600'
             }`}
           >
-            {showStress ? 'Kondisi Normal' : 'Terapkan Stress'}
+            {showStress ? 'Kondisi Normal' : 'Mulai Simulasi Stres'}
           </button>
         </div>
+
+        {showStress && (
+          <div className="p-4 rounded-xl bg-slate-950 border border-slate-900 space-y-2">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-400 font-semibold">Tingkat Goncangan Makroekonomi:</span>
+              <span className="text-red-400 font-bold">+{shockPercent}% (Kenaikan NPL)</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              value={shockPercent}
+              onChange={(e) => setShockPercent(parseInt(e.target.value) || 0)}
+              className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-500"
+            />
+            <div className="flex justify-between text-[9px] text-slate-500 font-mono">
+              <span>0% (Normal)</span>
+              <span>25% (Ringan)</span>
+              <span>50% (Sedang)</span>
+              <span>75% (Berat)</span>
+              <span>100% (Kritis)</span>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 rounded-lg bg-slate-800/50">
             <p className="text-xs text-slate-400 mb-1">Base Expected Loss</p>
-            <p className="text-xl font-bold text-white">{formatRupiah(portfolioData.stressTest.baseExpectedLoss)}</p>
-            <p className="text-xs text-slate-500">PD: {portfolioData.weightedAvgPD}%</p>
+            <p className="text-xl font-bold text-white">{formatRupiah(baseEL)}</p>
+            <p className="text-xs text-slate-500">PD: {basePD}%</p>
           </div>
           <div className={`p-4 rounded-lg transition-colors ${showStress ? 'bg-red-900/30 border border-red-500/20' : 'bg-slate-800/50'}`}>
             <p className="text-xs text-slate-400 mb-1">Stressed Expected Loss</p>
             <p className={`text-xl font-bold ${showStress ? 'text-red-400' : 'text-white'}`}>
-              {formatRupiah(portfolioData.stressTest.stressedExpectedLoss)}
+              {formatRupiah(stressedEL)}
             </p>
-            <p className="text-xs text-slate-500">PD: {portfolioData.stressTest.stressedDefaultRate}%</p>
+            <p className="text-xs text-slate-500">PD: {stressedPD}%</p>
           </div>
           <div className={`p-4 rounded-lg transition-colors ${showStress ? 'bg-red-900/30 border border-red-500/20' : 'bg-slate-800/50'}`}>
             <p className="text-xs text-slate-400 mb-1">Additional Loss</p>
             <p className={`text-xl font-bold ${showStress ? 'text-red-400' : 'text-white'}`}>
-              {formatRupiah(portfolioData.stressTest.additionalLoss)}
+              {formatRupiah(additionalLoss)}
             </p>
-            <p className="text-xs text-slate-500">+{portfolioData.stressTest.changePercent}% dari base</p>
+            <p className="text-xs text-slate-500">
+              {showStress ? `+${shockPercent}% dari base` : '0% dari base'}
+            </p>
           </div>
         </div>
       </div>

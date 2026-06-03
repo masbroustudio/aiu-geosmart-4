@@ -25,17 +25,26 @@ export default function FilteredMapView({ data }: FilteredMapViewProps) {
   const [scoreMin, setScoreMin] = useState(0);
   const [scoreMax, setScoreMax] = useState(100);
   const [riskLevel, setRiskLevel] = useState('All');
-
+  const [excludedCategories, setExcludedCategories] = useState<string[]>([]);
+ 
   const filtered = useMemo(() => {
     return data.filter((item) => {
       // Score range filter
       if (item.score < scoreMin || item.score > scoreMax) return false;
+ 
+      // Excluded Categories (Legend Filters)
+      if (excludedCategories.length > 0) {
+        if (item.score < 40 && excludedCategories.includes('very_low')) return false;
+        if (item.score >= 40 && item.score < 60 && excludedCategories.includes('low')) return false;
+        if (item.score >= 60 && item.score < 75 && excludedCategories.includes('medium')) return false;
+        if (item.score >= 75 && excludedCategories.includes('high')) return false;
+      }
 
       // Risk level filter (based on score)
       if (riskLevel === 'Low' && item.score <= 75) return false;
       if (riskLevel === 'Medium' && (item.score < 40 || item.score > 75)) return false;
       if (riskLevel === 'High' && item.score >= 40) return false;
-
+ 
       // Cluster filter (map to score ranges as proxy)
       if (cluster !== 'All') {
         const c = Number(cluster);
@@ -45,7 +54,7 @@ export default function FilteredMapView({ data }: FilteredMapViewProps) {
         if (c === 3 && item.score >= 40) return false;
         if (c === 4 && (item.score < 40 || item.score >= 60)) return false;
       }
-
+ 
       // Jenis Usaha filter (map to score ranges as proxy since map data lacks jenis_usaha)
       if (jenisUsaha !== 'Semua') {
         if (jenisUsaha === 'Makanan' && item.score < 50) return false;
@@ -54,11 +63,19 @@ export default function FilteredMapView({ data }: FilteredMapViewProps) {
         if (jenisUsaha === 'Jasa' && item.score < 65) return false;
         if (jenisUsaha === 'Pertanian' && item.score > 80) return false;
       }
-
+ 
       return true;
     });
-  }, [data, jenisUsaha, cluster, scoreMin, scoreMax, riskLevel]);
+  }, [data, jenisUsaha, cluster, scoreMin, scoreMax, riskLevel, excludedCategories]);
 
+  const handleToggleLegendFilter = (category: string) => {
+    setExcludedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category]
+    );
+  };
+ 
   return (
     <div className="space-y-4">
       {/* Filter Controls */}
@@ -130,9 +147,13 @@ export default function FilteredMapView({ data }: FilteredMapViewProps) {
           </div>
         </div>
       </div>
-
+ 
       {/* Map */}
-      <MapView data={filtered} />
+      <MapView
+        data={filtered}
+        activeLegendFilters={excludedCategories}
+        onToggleLegendFilter={handleToggleLegendFilter}
+      />
     </div>
   );
 }
