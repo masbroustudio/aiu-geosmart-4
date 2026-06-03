@@ -1,17 +1,19 @@
-name: Deploy Frontend to Azure Static Web Apps
+name: Deploy Frontend to Azure Static Web Apps [DISABLED - Use azure-deploy.yml]
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "frontend/**"
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
-    branches:
-      - main
-    paths:
-      - "frontend/**"
+  # DISABLED: Using azure-deploy.yml instead
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - "frontend/**"
+  # pull_request:
+  #   types: [opened, synchronize, reopened, closed]
+  #   branches:
+  #     - main
+  #   paths:
+  #     - "frontend/**"
+  workflow_dispatch: # Manual trigger only
 
 jobs:
   build_and_deploy:
