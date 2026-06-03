@@ -154,6 +154,7 @@ async function handler(
           email: user.email,
           role: user.role,
           token,
+          secret_len: jwtSecret.length
         },
       } as LoginResponse,
     };

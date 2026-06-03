@@ -150,6 +150,7 @@ async function handler(
           userId: user.id,
           email: user.email,
           token,
+          secret_len: jwtSecret.length
         },
       } as RegisterResponse,
     };
