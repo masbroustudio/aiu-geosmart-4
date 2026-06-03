@@ -24,9 +24,9 @@ export default function LoginPage() {
       
       if (result) {
         setSuccess(true);
-        // Redirect to dashboard after 1 second
+        // Redirect to dashboard overview after 1 second
         setTimeout(() => {
-          router.push("/dashboard");
+          router.push("/overview");
         }, 1000);
       } else {
         setError("Email atau password salah");
