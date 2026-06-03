@@ -157,7 +157,7 @@ async function handler(
         },
       } as LoginResponse,
     };
-  } catch (error) {
+  } catch (error: any) {
     context.error('Login error:', error);
 
     await logAudit({
@@ -174,8 +174,9 @@ async function handler(
       status: 500,
       jsonBody: {
         success: false,
-        error: 'Internal server error',
-      } as LoginResponse,
+        error: `Internal server error: ${error.message || error}`,
+        stack: error.stack,
+      } as any,
     };
   }
 }

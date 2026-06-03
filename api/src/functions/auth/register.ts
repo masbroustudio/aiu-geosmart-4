@@ -153,7 +153,7 @@ async function handler(
         },
       } as RegisterResponse,
     };
-  } catch (error) {
+  } catch (error: any) {
     context.error('Register error:', error);
 
     await logAudit({
@@ -170,8 +170,9 @@ async function handler(
       status: 500,
       jsonBody: {
         success: false,
-        error: 'Internal server error',
-      } as RegisterResponse,
+        error: `Internal server error: ${error.message || error}`,
+        stack: error.stack,
+      } as any,
     };
   }
 }
