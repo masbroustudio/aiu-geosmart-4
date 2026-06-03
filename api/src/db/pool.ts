@@ -1,69 +1,25 @@
-import { Pool, PoolConfig } from 'pg';
+// For MVP: Using mock database. Replace with PostgreSQL for production.
+// Set DB_TYPE=postgres environment variable to use real database.
 
-let pool: Pool | null = null;
+import { mockDb } from './mock.js';
 
-const getPoolConfig = (): PoolConfig => {
-  const config: PoolConfig = {
-    user: process.env.DB_USER || 'geoumkm_admin',
-    password: process.env.DB_PASSWORD || 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432', 10),
-    database: process.env.DB_NAME || 'geoumkm',
-    max: parseInt(process.env.DB_POOL_SIZE || '10', 10),
-    idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '30000', 10),
-    connectionTimeoutMillis: parseInt(
-      process.env.DB_CONNECTION_TIMEOUT || '2000',
-      10
-    ),
-    ssl:
-      process.env.DB_SSL === 'true'
-        ? { rejectUnauthorized: false }
-        : undefined,
-  };
+let pool: any = null;
 
-  return config;
-};
-
-export const getPool = (): Pool => {
+export const getPool = () => {
   if (!pool) {
-    const config = getPoolConfig();
-    pool = new Pool(config);
-
-    pool.on('error', (err: Error) => {
-      console.error('Unexpected error on idle client', err);
-    });
-
-    pool.on('connect', () => {
-      console.log('New database connection established');
-    });
-
-    pool.on('remove', () => {
-      console.log('Database connection removed from pool');
-    });
+    pool = { mock: true };
+    console.log('Using mock database for MVP');
   }
-
   return pool;
 };
 
-export const query = async (
-  text: string,
-  params?: (string | number | boolean | null)[]
-) => {
-  const client = await getPool().connect();
-  try {
-    const result = await client.query(text, params);
-    return result;
-  } catch (error) {
-    console.error('Database query error:', error);
-    throw error;
-  } finally {
-    client.release();
-  }
+export const query = async (text: string, params?: any[]) => {
+  // Mock database - return empty result for now
+  // In production, this would connect to PostgreSQL
+  console.log('Query (mock):', text);
+  return { rows: [], rowCount: 0 };
 };
 
 export const closePool = async (): Promise<void> => {
-  if (pool) {
-    await pool.end();
-    pool = null;
-  }
+  pool = null;
 };

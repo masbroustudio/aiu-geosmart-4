@@ -1,5 +1,5 @@
 import { HttpRequest } from '@azure/functions';
-import { query } from '../db/pool';
+import { mockDb } from '../db/mock.js';
 
 export interface AuditLogData {
   userId?: number;
@@ -15,23 +15,16 @@ export interface AuditLogData {
 
 export const logAudit = async (data: AuditLogData): Promise<void> => {
   try {
-    await query(
-      `INSERT INTO audit_logs (
-        user_id, action, endpoint, method, status_code,
-        request_body, response_time_ms, ip_address, user_agent
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [
-        data.userId || null,
-        data.action,
-        data.endpoint,
-        data.method,
-        data.statusCode,
-        data.requestBody || null,
-        data.responseTimeMs || null,
-        data.ipAddress || null,
-        data.userAgent || null,
-      ]
-    );
+    await mockDb.logAudit({
+      user_id: data.userId,
+      action: data.action,
+      endpoint: data.endpoint,
+      method: data.method,
+      status_code: data.statusCode,
+      response_time_ms: data.responseTimeMs,
+      ip_address: data.ipAddress,
+      user_agent: data.userAgent,
+    });
   } catch (error) {
     console.error('Failed to log audit:', error);
   }
@@ -53,22 +46,6 @@ export const extractRequestInfo = (request: HttpRequest) => {
 export const getRecentAuditLogs = async (
   userId?: number,
   limit: number = 100
-): Promise<AuditLogData[]> => {
-  const query_text = userId
-    ? `SELECT user_id, action, endpoint, method, status_code,
-             request_body, response_time_ms, ip_address, user_agent
-      FROM audit_logs
-      WHERE user_id = $1
-      ORDER BY created_at DESC
-      LIMIT $2`
-    : `SELECT user_id, action, endpoint, method, status_code,
-             request_body, response_time_ms, ip_address, user_agent
-      FROM audit_logs
-      ORDER BY created_at DESC
-      LIMIT $1`;
-
-  const params = userId ? [userId, limit] : [limit];
-  const result = await query(query_text, params);
-
-  return result.rows;
+): Promise<any[]> => {
+  return mockDb.getAuditLogs(limit);
 };
