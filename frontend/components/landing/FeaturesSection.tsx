@@ -14,39 +14,39 @@ import {
 const features = [
   {
     icon: ShieldCheck,
-    title: "Credit Scoring AI",
+    title: "Credit Scoring & SHAP Explainer",
     description:
-      "Model XGBoost untuk prediksi risiko kredit UMKM dengan akurasi tinggi dan estimasi Probability of Default (PD).",
+      "Model XGBoost dengan visualisasi SHAP (Force & Summary Plot) untuk transparansi penuh terhadap faktor penentu risiko kredit dan estimasi Probability of Default (PD).",
   },
   {
     icon: MapPin,
-    title: "Location Intelligence",
+    title: "Geospatial Density Heatmap",
     description:
-      "Analisis geospasial mendalam untuk mengidentifikasi potensi lokasi dan risiko area berdasarkan data UMKM.",
+      "Peta kepadatan spasial interaktif Leaflet di 596 kecamatan Jawa Barat dengan filter legenda dinamis dan visualisasi persebaran komoditas real-time.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Macro Stress-Testing",
+    description:
+      "Simulator ketahanan portofolio pembiayaan bank terhadap guncangan makroekonomi (inflasi & kontraksi PDB) secara interaktif dengan visualisasi kurva NPL.",
   },
   {
     icon: Layers,
     title: "Clustering & Segmentation",
     description:
-      "Segmentasi UMKM menggunakan K-Means dan DBSCAN untuk memahami pola dan karakteristik usaha.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Policy Simulation",
-    description:
-      "Simulasi dampak kebijakan terhadap UMKM dengan model what-if analysis untuk pengambilan keputusan.",
+      "Segmentasi profil kematangan digital & kesiapan infrastruktur UMKM berbasis K-Means dan DBSCAN untuk sasaran pembinaan yang presisi.",
   },
   {
     icon: MessageSquare,
-    title: "AI Chat Assistant",
+    title: "Agentic AI Chatbot (GPT-4o)",
     description:
-      "Asisten AI berbasis GPT-4o dengan RAG untuk menjawab pertanyaan tentang data dan insight UMKM.",
+      "Asisten AI dengan kemampuan Function Calling (AI Tools) untuk menghitung kelayakan kredit, ringkasan portofolio, dan analisis regional langsung di ruang obrolan.",
   },
   {
     icon: FileBarChart,
-    title: "Executive Reports",
+    title: "CSV Batch Ingestion",
     description:
-      "Laporan eksekutif otomatis dengan visualisasi interaktif untuk stakeholder dan pengambil keputusan.",
+      "Unggah massal data UMKM dalam format CSV, proses kalkulasi risiko secara paralel, dan ekspor instan kembali menjadi laporan analisis portofolio.",
   },
 ];
 

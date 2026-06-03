@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { Building2, Landmark, Briefcase } from "lucide-react";
 
@@ -19,6 +19,7 @@ const tabs = [
     ],
     cta: "Lihat Demo Credit Scoring",
     gradient: "from-blue-500/5 to-cyan-500/5",
+    targetPath: "/credit-scoring",
   },
   {
     id: "pemerintah",
@@ -34,6 +35,7 @@ const tabs = [
     ],
     cta: "Lihat Demo Policy Simulation",
     gradient: "from-amber-500/5 to-orange-500/5",
+    targetPath: "/policy-simulation",
   },
   {
     id: "investor",
@@ -49,6 +51,7 @@ const tabs = [
     ],
     cta: "Lihat Demo Opportunity Map",
     gradient: "from-purple-500/5 to-pink-500/5",
+    targetPath: "/location-intelligence",
   },
 ];
 
@@ -56,8 +59,17 @@ export default function ForWhoSection() {
   const [activeTab, setActiveTab] = useState("bank");
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-50px" });
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(!!localStorage.getItem("auth_token"));
+  }, []);
 
   const activeContent = tabs.find((t) => t.id === activeTab)!;
+
+  const handleCtaClick = () => {
+    window.location.href = isLoggedIn ? activeContent.targetPath : "/register";
+  };
 
   return (
     <section id="untuk-siapa" className="py-24 relative">
@@ -134,7 +146,10 @@ export default function ForWhoSection() {
                     </li>
                   ))}
                 </ul>
-                <button className="mt-8 px-6 py-3 rounded-lg bg-gradient-to-r from-primary to-accent text-white text-sm font-semibold hover:shadow-lg hover:shadow-accent/25 transition-all">
+                <button 
+                  onClick={handleCtaClick}
+                  className="mt-8 px-6 py-3 rounded-lg bg-gradient-to-r from-primary to-accent text-white text-sm font-semibold hover:shadow-lg hover:shadow-accent/25 transition-all hover:scale-105"
+                >
                   {activeContent.cta}
                 </button>
               </div>

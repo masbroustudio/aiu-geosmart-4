@@ -52,12 +52,17 @@ function ThemeToggle() {
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
     window.addEventListener("scroll", handleScroll);
+    
+    // Check if user is logged in
+    setIsLoggedIn(!!localStorage.getItem("auth_token"));
+    
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -98,12 +103,29 @@ export default function Navbar() {
           {/* CTA + Dark Mode Toggle */}
           <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
-            <a
-              href="#harga"
-              className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-primary to-accent text-white text-sm font-semibold hover:shadow-lg hover:shadow-accent/25 transition-all"
-            >
-              Mulai Sekarang
-            </a>
+            {isLoggedIn ? (
+              <a
+                href="/overview"
+                className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-primary to-accent text-white text-sm font-semibold hover:shadow-lg hover:shadow-accent/25 transition-all hover:scale-105"
+              >
+                Buka Dasbor
+              </a>
+            ) : (
+              <>
+                <a
+                  href="/login"
+                  className="px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-accent dark:hover:text-white transition-colors"
+                >
+                  Masuk
+                </a>
+                <a
+                  href="/register"
+                  className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-primary to-accent text-white text-sm font-semibold hover:shadow-lg hover:shadow-accent/25 transition-all hover:scale-105"
+                >
+                  Daftar
+                </a>
+              </>
+            )}
           </div>
 
           {/* Mobile Toggle */}
@@ -130,15 +152,37 @@ export default function Navbar() {
                   {link.label}
                 </a>
               ))}
-              <div className="flex items-center gap-3 mt-2">
-                <ThemeToggle />
-                <a
-                  href="#harga"
-                  className="flex-1 px-5 py-2.5 rounded-lg bg-gradient-to-r from-primary to-accent text-white text-sm font-semibold text-center"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Mulai Sekarang
-                </a>
+              <div className="flex flex-col gap-3 mt-2">
+                <div className="flex items-center justify-between border-b border-black/5 dark:border-white/5 pb-2">
+                  <span className="text-sm text-slate-500">Mode Gelap</span>
+                  <ThemeToggle />
+                </div>
+                {isLoggedIn ? (
+                  <a
+                    href="/overview"
+                    className="w-full px-5 py-2.5 rounded-lg bg-gradient-to-r from-primary to-accent text-white text-sm font-semibold text-center"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    Buka Dasbor
+                  </a>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <a
+                      href="/login"
+                      className="w-full px-5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      Masuk
+                    </a>
+                    <a
+                      href="/register"
+                      className="w-full px-5 py-2.5 rounded-lg bg-gradient-to-r from-primary to-accent text-white text-sm font-semibold text-center"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      Daftar
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -50,6 +50,11 @@ function AnimatedCounter({
 export default function HeroSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(!!localStorage.getItem("auth_token"));
+  }, []);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -94,9 +99,10 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-lg sm:text-xl text-slate-300 mb-10 max-w-3xl mx-auto"
+          className="text-lg sm:text-xl text-slate-300 mb-10 max-w-3xl mx-auto leading-relaxed"
         >
-          AI-Powered Location Intelligence & Credit Risk Assessment
+          Analisis Kredit Cerdik dengan XGBoost & SHAP Explainer, Intelijen Lokasi Interaktif dengan Kepadatan Heatmap, 
+          Simulasi Uji Stres Portofolio, dan Asisten Chatbot AI Agentic untuk Pengambilan Keputusan Strategis Anda.
         </motion.p>
 
         {/* CTA Buttons */}
@@ -106,18 +112,37 @@ export default function HeroSection() {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="flex flex-col sm:flex-row gap-4 justify-center mb-16"
         >
-          <a
-            href="#harga"
-            className="px-8 py-4 rounded-xl bg-gradient-to-r from-accent to-accent-600 text-white font-semibold text-lg hover:shadow-xl hover:shadow-accent/30 transition-all hover:scale-105"
-          >
-            Coba Demo Gratis
-          </a>
-          <a
-            href="#fitur"
-            className="px-8 py-4 rounded-xl border-2 border-white/30 text-white font-semibold text-lg hover:bg-white/10 transition-all hover:scale-105"
-          >
-            Pelajari Lebih Lanjut
-          </a>
+          {isLoggedIn ? (
+            <>
+              <a
+                href="/overview"
+                className="px-8 py-4 rounded-xl bg-gradient-to-r from-accent to-accent-600 text-white font-semibold text-lg hover:shadow-xl hover:shadow-accent/30 transition-all hover:scale-105"
+              >
+                Buka Dasbor Utama
+              </a>
+              <a
+                href="#fitur"
+                className="px-8 py-4 rounded-xl border-2 border-white/30 text-white font-semibold text-lg hover:bg-white/10 transition-all hover:scale-105"
+              >
+                Eksplorasi Fitur v4.0
+              </a>
+            </>
+          ) : (
+            <>
+              <a
+                href="/register"
+                className="px-8 py-4 rounded-xl bg-gradient-to-r from-accent to-accent-600 text-white font-semibold text-lg hover:shadow-xl hover:shadow-accent/30 transition-all hover:scale-105"
+              >
+                Mulai Uji Coba Gratis
+              </a>
+              <a
+                href="/login"
+                className="px-8 py-4 rounded-xl border-2 border-white/30 text-white font-semibold text-lg hover:bg-white/10 transition-all hover:scale-105"
+              >
+                Masuk Akun
+              </a>
+            </>
+          )}
         </motion.div>
 
         {/* Stats */}
