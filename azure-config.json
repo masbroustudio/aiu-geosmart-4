@@ -1,0 +1,8 @@
+{
+  "rgName": "rg-geoumkm-v2",
+  "staticAppName": "swa-geoumkm-v2",
+  "staticWebAppUrl": "https://witty-island-0fdf65f00.7.azurestaticapps.net",
+  "apiURL": "https://witty-island-0fdf65f00.7.azurestaticapps.net/api",
+  "location": "eastasia",
+  "notes": "For production, update API_URL to point to deployed Azure Functions endpoint"
+}

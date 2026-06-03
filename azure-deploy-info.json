@@ -1,0 +1,8 @@
+{
+  "swaUrl": "witty-island-0fdf65f00.7.azurestaticapps.net",
+  "rgName": "rg-geoumkm-v2",
+  "location": "eastasia",
+  "funcAppName": "func-geoumkm-v2",
+  "staticAppName": "swa-geoumkm-v2",
+  "funcUrl": null
+}
