@@ -4,7 +4,7 @@ import {
   getGovPriorityKecamatan,
   getGovPriorityClusters,
 } from "../data/loader.js";
-import { verifyToken } from "../middleware/verifyToken.js";
+import { requireAuth } from "../middleware/verifyToken.js";
 import { logAudit, extractRequestInfo } from "../services/audit.js";
 
 async function handler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
@@ -13,9 +13,9 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
   let userId: number | undefined;
 
   try {
-    // Verify authentication
-    const auth = await verifyToken(request, context);
-    userId = auth?.userId;
+    // Require authentication
+    const auth = await requireAuth(request, context);
+    userId = auth.userId;
 
     const policyImpacts = getPolicyImpacts();
     const priorityKecamatan = getGovPriorityKecamatan();
@@ -65,22 +65,25 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
       },
     };
   } catch (error) {
+    const isAuthError = error instanceof Error && error.message === 'Unauthorized';
+    const statusCode = isAuthError ? 401 : 500;
+    
     context.error("Error in policy handler:", error);
 
     await logAudit({
       userId,
-      action: "policy_error",
+      action: isAuthError ? "policy_unauthorized" : "policy_error",
       endpoint: requestInfo.endpoint,
       method: requestInfo.method,
-      statusCode: 500,
+      statusCode,
       responseTimeMs: Date.now() - startTime,
       ipAddress: requestInfo.ipAddress,
       userAgent: requestInfo.userAgent,
     });
 
     return {
-      status: 500,
-      jsonBody: { success: false, error: "Internal server error" },
+      status: statusCode,
+      jsonBody: { success: false, error: isAuthError ? "Unauthorized: Valid token required" : "Internal server error" },
     };
   }
 }

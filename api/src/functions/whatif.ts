@@ -1,6 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { getWhatIfResults } from "../data/loader.js";
-import { verifyToken } from "../middleware/verifyToken.js";
+import { requireAuth } from "../middleware/verifyToken.js";
 import { logAudit, extractRequestInfo } from "../services/audit.js";
 
 interface WhatIfRequest {
@@ -17,9 +17,9 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
   let userId: number | undefined;
 
   try {
-    // Verify authentication
-    const auth = await verifyToken(request, context);
-    userId = auth?.userId;
+    // Require authentication
+    const auth = await requireAuth(request, context);
+    userId = auth.userId;
 
     const body = (await request.json()) as WhatIfRequest;
     const allScenarios = getWhatIfResults();
@@ -107,22 +107,25 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
       },
     };
   } catch (error) {
+    const isAuthError = error instanceof Error && error.message === 'Unauthorized';
+    const statusCode = isAuthError ? 401 : 500;
+    
     context.error("Error in whatif handler:", error);
 
     await logAudit({
       userId,
-      action: "whatif_error",
+      action: isAuthError ? "whatif_unauthorized" : "whatif_error",
       endpoint: requestInfo.endpoint,
       method: requestInfo.method,
-      statusCode: 500,
+      statusCode,
       responseTimeMs: Date.now() - startTime,
       ipAddress: requestInfo.ipAddress,
       userAgent: requestInfo.userAgent,
     });
 
     return {
-      status: 500,
-      jsonBody: { success: false, error: "Internal server error" },
+      status: statusCode,
+      jsonBody: { success: false, error: isAuthError ? "Unauthorized: Valid token required" : "Internal server error" },
     };
   }
 }

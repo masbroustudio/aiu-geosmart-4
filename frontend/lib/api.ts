@@ -11,10 +11,57 @@ const BASE_URL = typeof window !== 'undefined'
   ? (process.env.NEXT_PUBLIC_API_URL || '')
   : '';
 
-async function fetchWithFallback<T>(endpoint: string, fallback: T): Promise<T> {
+// Auth token management
+function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('auth_token');
+}
+
+function setAuthToken(token: string): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('auth_token', token);
+  }
+}
+
+function clearAuthToken(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('auth_token');
+  }
+}
+
+function getAuthHeaders(): Record<string, string> {
+  const token = getAuthToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+  };
+}
+
+async function fetchWithFallback<T>(
+  endpoint: string,
+  fallback: T,
+  options?: RequestInit
+): Promise<T> {
   if (!BASE_URL) return fallback;
   try {
-    const res = await fetch(`${BASE_URL}${endpoint}`);
+    const headers = {
+      ...getAuthHeaders(),
+      ...options?.headers,
+    };
+    const res = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+    
+    if (res.status === 401) {
+      // Clear invalid token on unauthorized
+      clearAuthToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('unauthorized'));
+      }
+      return fallback;
+    }
+    
     if (!res.ok) return fallback;
     const json = await res.json();
     // Unwrap the API envelope { success, data }
@@ -98,11 +145,21 @@ export async function fetchKecamatan(_params?: { kabupaten?: string }) {
 export async function postChat(body: { message: string; persona: string; history?: Array<{ role: string; content: string }> }): Promise<{ response: string }> {
   if (!BASE_URL) return { response: '' };
   try {
+    const headers = getAuthHeaders();
     const res = await fetch(`${BASE_URL}/api/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(body),
     });
+    
+    if (res.status === 401) {
+      clearAuthToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('unauthorized'));
+      }
+      return { response: '' };
+    }
+    
     if (!res.ok) return { response: '' };
     const json = await res.json();
     // Unwrap the API envelope { success, data: { response, intent, sources } }
@@ -115,5 +172,149 @@ export async function postChat(body: { message: string; persona: string; history
     return { response: '' };
   } catch {
     return { response: '' };
+  }
+}
+
+// Auth endpoints
+export async function register(email: string, password: string, fullName: string) {
+  if (!BASE_URL) return null;
+  try {
+    const res = await fetch(`${BASE_URL}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, full_name: fullName }),
+    });
+    const json = await res.json();
+    if (json.success && json.data?.token) {
+      setAuthToken(json.data.token);
+      return json.data;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function login(email: string, password: string) {
+  if (!BASE_URL) return null;
+  try {
+    const res = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const json = await res.json();
+    if (json.success && json.data?.token) {
+      setAuthToken(json.data.token);
+      return json.data;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function logout() {
+  clearAuthToken();
+}
+
+// New ML Scoring endpoints
+export interface CreditScoreRequest {
+  umkm_name?: string;
+  sector?: string;
+  location?: string;
+  omset_bulanan?: number;
+  jumlah_karyawan?: number;
+  has_digital_presence?: boolean;
+  tahun_berdiri?: number;
+  skor_infrastruktur?: number;
+  skor_potensi?: number;
+}
+
+export interface CreditScoreResponse {
+  umkm_name?: string;
+  credit_score: number;
+  rating: string;
+  pd_bucket: string;
+  predicted_pd: number;
+  confidence: number;
+  explanation: string;
+  risk_level: string;
+}
+
+export async function scoreCreditRisk(request: CreditScoreRequest): Promise<CreditScoreResponse | null> {
+  if (!BASE_URL) return null;
+  try {
+    const res = await fetch(`${BASE_URL}/api/scoring/credit`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(request),
+    });
+    
+    if (res.status === 401) {
+      clearAuthToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('unauthorized'));
+      }
+      return null;
+    }
+    
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json.success && json.data) {
+      return json.data as CreditScoreResponse;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export interface LocationScoreRequest {
+  kecamatan?: string;
+  kabupaten_kota?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface LocationScoreResponse {
+  location: string;
+  kecamatan: string;
+  kabupaten_kota: string;
+  predicted_score: number;
+  actual_score: number;
+  residual: number;
+  opportunity_level: string;
+  recommendations: string[];
+}
+
+export async function scoreLocation(request: LocationScoreRequest): Promise<LocationScoreResponse | LocationScoreResponse[] | null> {
+  if (!BASE_URL) return null;
+  try {
+    const query = new URLSearchParams();
+    if (request.kecamatan) query.set('kecamatan', request.kecamatan);
+    if (request.kabupaten_kota) query.set('kabupaten_kota', request.kabupaten_kota);
+    
+    const res = await fetch(`${BASE_URL}/api/scoring/location${query.toString() ? `?${query}` : ''}`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+    
+    if (res.status === 401) {
+      clearAuthToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('unauthorized'));
+      }
+      return null;
+    }
+    
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json.success && json.data) {
+      return json.data as LocationScoreResponse | LocationScoreResponse[];
+    }
+    return null;
+  } catch {
+    return null;
   }
 }

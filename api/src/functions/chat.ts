@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { getKnowledgeBase } from "../data/loader.js";
 import { ChatMessage, ChatResponse, KnowledgeBaseEntry } from "../shared/types.js";
-import { verifyToken } from "../middleware/verifyToken.js";
+import { requireAuth } from "../middleware/verifyToken.js";
 import { logAudit, extractRequestInfo } from "../services/audit.js";
 
 function findBestMatch(message: string, examples: KnowledgeBaseEntry[]): KnowledgeBaseEntry | null {
@@ -63,9 +63,9 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
   let userId: number | undefined;
 
   try {
-    // Verify authentication
-    const auth = await verifyToken(request, context);
-    userId = auth?.userId;
+    // Require authentication
+    const auth = await requireAuth(request, context);
+    userId = auth.userId;
 
     const body = (await request.json()) as ChatMessage;
     const { message, persona } = body;
@@ -151,22 +151,25 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
       },
     };
   } catch (error) {
+    const isAuthError = error instanceof Error && error.message === 'Unauthorized';
+    const statusCode = isAuthError ? 401 : 500;
+    
     context.error("Error in chat handler:", error);
 
     await logAudit({
       userId,
-      action: "chat_error",
+      action: isAuthError ? "chat_unauthorized" : "chat_error",
       endpoint: requestInfo.endpoint,
       method: requestInfo.method,
-      statusCode: 500,
+      statusCode,
       responseTimeMs: Date.now() - startTime,
       ipAddress: requestInfo.ipAddress,
       userAgent: requestInfo.userAgent,
     });
 
     return {
-      status: 500,
-      jsonBody: { success: false, error: "Internal server error" },
+      status: statusCode,
+      jsonBody: { success: false, error: isAuthError ? "Unauthorized: Valid token required" : "Internal server error" },
     };
   }
 }

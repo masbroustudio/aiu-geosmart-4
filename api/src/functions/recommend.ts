@@ -1,6 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { getRecommendations } from "../data/loader.js";
-import { verifyToken } from "../middleware/verifyToken.js";
+import { requireAuth } from "../middleware/verifyToken.js";
 import { logAudit, extractRequestInfo } from "../services/audit.js";
 
 async function handler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
@@ -9,9 +9,9 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
   let userId: number | undefined;
 
   try {
-    // Verify authentication
-    const auth = await verifyToken(request, context);
-    userId = auth?.userId;
+    // Require authentication
+    const auth = await requireAuth(request, context);
+    userId = auth.userId;
 
     const jenisUsaha = request.query.get("jenis_usaha") || undefined;
     const kabupaten = request.query.get("kabupaten") || undefined;
@@ -60,22 +60,25 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
       },
     };
   } catch (error) {
+    const isAuthError = error instanceof Error && error.message === 'Unauthorized';
+    const statusCode = isAuthError ? 401 : 500;
+    
     context.error("Error in recommend handler:", error);
 
     await logAudit({
       userId,
-      action: "recommendations_error",
+      action: isAuthError ? "recommendations_unauthorized" : "recommendations_error",
       endpoint: requestInfo.endpoint,
       method: requestInfo.method,
-      statusCode: 500,
+      statusCode,
       responseTimeMs: Date.now() - startTime,
       ipAddress: requestInfo.ipAddress,
       userAgent: requestInfo.userAgent,
     });
 
     return {
-      status: 500,
-      jsonBody: { success: false, error: "Internal server error" },
+      status: statusCode,
+      jsonBody: { success: false, error: isAuthError ? "Unauthorized: Valid token required" : "Internal server error" },
     };
   }
 }
