@@ -1,4 +1,5 @@
 name: Build and Deploy to Azure Static Web App
+# Trigger build: 2026-06-04
 
 on:
   push:
