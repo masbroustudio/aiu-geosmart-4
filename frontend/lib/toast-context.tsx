@@ -22,13 +22,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const timersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
-  useEffect(() => {
-    return () => {
-      timersRef.current.forEach((timer) => clearTimeout(timer));
-      timersRef.current.clear();
-    };
-  }, []);
-
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
     const timer = timersRef.current.get(id);
@@ -37,7 +30,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       timersRef.current.delete(id);
     }
   }, []);
-
+ 
   const addToast = useCallback((message: string, type: ToastType) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     setToasts((prev) => [...prev, { id, message, type }]);
@@ -46,6 +39,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     }, 3000);
     timersRef.current.set(id, timer);
   }, [removeToast]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleUnauthorized = () => {
+      addToast("Sesi Anda telah berakhir atau tidak valid. Silakan login kembali.", "error");
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 1500);
+    };
+    window.addEventListener('unauthorized', handleUnauthorized);
+    return () => {
+      window.removeEventListener('unauthorized', handleUnauthorized);
+      timersRef.current.forEach((timer) => clearTimeout(timer));
+      timersRef.current.clear();
+    };
+  }, [addToast]);
 
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
