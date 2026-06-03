@@ -2,7 +2,7 @@
   "name": "geoumkm-api",
   "version": "1.0.0",
   "description": "GeoUMKM Intelligence API - Azure Functions backend",
-  "main": "dist/functions/*.js",
+  "main": "dist/functions/**/*.js",
   "scripts": {
     "build": "tsc",
     "start": "func start"
