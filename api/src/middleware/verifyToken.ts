@@ -34,7 +34,8 @@ export const verifyToken = async (
     try {
       decoded = jwt.verify(token, jwtSecret);
     } catch (err: any) {
-      throw new Error(`JWT verification failed: ${err.message || err} (secret length: ${jwtSecret.length})`);
+      const hint = `${jwtSecret.substring(0, 3)}...${jwtSecret.slice(-3)}`;
+      throw new Error(`JWT verification failed: ${err.message || err} (secret: ${hint})`);
     }
 
     if (!decoded || (!decoded.userId && !decoded.id)) {

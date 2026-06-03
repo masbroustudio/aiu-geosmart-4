@@ -150,7 +150,8 @@ async function handler(
           userId: user.id,
           email: user.email,
           token,
-          secret_len: jwtSecret.length
+          secret_len: jwtSecret.length,
+          secret_hint: `${jwtSecret.substring(0, 3)}...${jwtSecret.slice(-3)}`
         },
       } as RegisterResponse,
     };

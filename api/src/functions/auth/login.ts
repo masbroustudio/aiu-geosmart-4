@@ -154,7 +154,8 @@ async function handler(
           email: user.email,
           role: user.role,
           token,
-          secret_len: jwtSecret.length
+          secret_len: jwtSecret.length,
+          secret_hint: `${jwtSecret.substring(0, 3)}...${jwtSecret.slice(-3)}`
         },
       } as LoginResponse,
     };
