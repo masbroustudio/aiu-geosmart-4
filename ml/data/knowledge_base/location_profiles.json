@@ -3777,8 +3777,8 @@
     },
     "recommended_business_types": [
       "Makanan",
-      "Fashion",
-      "Kerajinan"
+      "Kerajinan",
+      "Fashion"
     ]
   },
   {
@@ -4765,8 +4765,8 @@
       "cluster_name": "High-Risk Underserved"
     },
     "recommended_business_types": [
-      "Makanan",
       "Jasa",
+      "Makanan",
       "Fashion"
     ]
   },
@@ -4937,8 +4937,8 @@
       "cluster_name": "High-Risk Underserved"
     },
     "recommended_business_types": [
-      "Pertanian",
       "Makanan",
+      "Pertanian",
       "Kerajinan"
     ]
   },
@@ -5624,8 +5624,8 @@
     },
     "recommended_business_types": [
       "Fashion",
-      "Kerajinan",
-      "Makanan"
+      "Makanan",
+      "Kerajinan"
     ]
   },
   {
@@ -6139,8 +6139,8 @@
     },
     "recommended_business_types": [
       "Makanan",
-      "Fashion",
-      "Jasa"
+      "Jasa",
+      "Fashion"
     ]
   },
   {
@@ -6354,8 +6354,8 @@
     },
     "recommended_business_types": [
       "Pertanian",
-      "Jasa",
-      "Fashion"
+      "Fashion",
+      "Jasa"
     ]
   },
   {
@@ -7558,7 +7558,7 @@
     "recommended_business_types": [
       "Makanan",
       "Pertanian",
-      "Kerajinan"
+      "Jasa"
     ]
   },
   {
@@ -7943,8 +7943,8 @@
     },
     "recommended_business_types": [
       "Makanan",
-      "Jasa",
-      "Kerajinan"
+      "Kerajinan",
+      "Jasa"
     ]
   },
   {
@@ -9274,7 +9274,7 @@
     "recommended_business_types": [
       "Makanan",
       "Fashion",
-      "Kerajinan"
+      "Jasa"
     ]
   },
   {
@@ -9488,8 +9488,8 @@
     },
     "recommended_business_types": [
       "Makanan",
-      "Fashion",
-      "Jasa"
+      "Jasa",
+      "Fashion"
     ]
   },
   {
@@ -10174,8 +10174,8 @@
     },
     "recommended_business_types": [
       "Jasa",
-      "Fashion",
-      "Kerajinan"
+      "Kerajinan",
+      "Fashion"
     ]
   },
   {
@@ -10518,8 +10518,8 @@
     },
     "recommended_business_types": [
       "Fashion",
-      "Kerajinan",
-      "Makanan"
+      "Makanan",
+      "Kerajinan"
     ]
   },
   {
@@ -10948,8 +10948,8 @@
     },
     "recommended_business_types": [
       "Makanan",
-      "Kerajinan",
-      "Fashion"
+      "Fashion",
+      "Kerajinan"
     ]
   },
   {
@@ -12109,8 +12109,8 @@
     },
     "recommended_business_types": [
       "Fashion",
-      "Pertanian",
-      "Kerajinan"
+      "Kerajinan",
+      "Pertanian"
     ]
   },
   {
@@ -13610,8 +13610,8 @@
     },
     "recommended_business_types": [
       "Makanan",
-      "Jasa",
-      "Kerajinan"
+      "Kerajinan",
+      "Jasa"
     ]
   },
   {
@@ -15970,8 +15970,8 @@
       "cluster_name": "High-Risk Underserved (4)"
     },
     "recommended_business_types": [
-      "Makanan",
       "Jasa",
+      "Makanan",
       "Fashion"
     ]
   },
@@ -20949,8 +20949,8 @@
     },
     "recommended_business_types": [
       "Makanan",
-      "Jasa",
-      "Pertanian"
+      "Pertanian",
+      "Jasa"
     ]
   },
   {
@@ -21421,9 +21421,9 @@
       "cluster_name": "High-Risk Underserved"
     },
     "recommended_business_types": [
-      "Jasa",
       "Kerajinan",
-      "Makanan"
+      "Jasa",
+      "Fashion"
     ]
   },
   {
@@ -23484,8 +23484,8 @@
     },
     "recommended_business_types": [
       "Makanan",
-      "Kerajinan",
-      "Fashion"
+      "Fashion",
+      "Kerajinan"
     ]
   },
   {
@@ -23527,8 +23527,8 @@
     },
     "recommended_business_types": [
       "Makanan",
-      "Kerajinan",
-      "Pertanian"
+      "Pertanian",
+      "Kerajinan"
     ]
   },
   {

@@ -2,7 +2,7 @@
   "project": {
     "name": "GeoUMKM Intelligence",
     "version": "3.0",
-    "date_generated": "2026-05-26 05:27:41",
+    "date_generated": "2026-06-03 15:46:41",
     "scope": "West Java (Jawa Barat) Province",
     "data_type": "Synthetic (realistic patterns)"
   },
@@ -18,8 +18,8 @@
   "model_performance": {
     "location_scoring": {
       "algorithm": "XGBoost Regressor",
-      "rmse": 0.1654,
-      "mae": 0.0805,
+      "rmse": 0.1704,
+      "mae": 0.0822,
       "r2": 0.9999,
       "n_test_samples": 2000
     },
@@ -42,7 +42,7 @@
   "business_impact": {
     "government": {
       "total_umkm_impacted": 7987,
-      "new_viable_locations": 583,
+      "new_viable_locations": 745,
       "priority_clusters": 5,
       "policies_simulated": 3
     },

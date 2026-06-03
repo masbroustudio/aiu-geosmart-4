@@ -7,43 +7,43 @@
     "top_features": [
       {
         "feature": "infra_x_income",
-        "importance": 0.2497
+        "importance": 0.4919
       },
       {
         "feature": "akses_internet_pct",
-        "importance": 0.2315
+        "importance": 0.1549
       },
       {
         "feature": "location_advantage",
-        "importance": 0.1721
-      },
-      {
-        "feature": "skor_infrastruktur",
-        "importance": 0.1238
+        "importance": 0.1105
       },
       {
         "feature": "income_per_kapita",
-        "importance": 0.1081
+        "importance": 0.0876
+      },
+      {
+        "feature": "skor_infrastruktur",
+        "importance": 0.034
       },
       {
         "feature": "digital_readiness_index",
-        "importance": 0.0213
+        "importance": 0.0326
       },
       {
         "feature": "penetrasi_kur_pct",
-        "importance": 0.0208
-      },
-      {
-        "feature": "has_digital_presence",
-        "importance": 0.0172
+        "importance": 0.0246
       },
       {
         "feature": "jumlah_kompetitor_radius_3km",
-        "importance": 0.0154
+        "importance": 0.0151
+      },
+      {
+        "feature": "has_digital_presence",
+        "importance": 0.009
       },
       {
         "feature": "competition_density_ratio",
-        "importance": 0.0074
+        "importance": 0.0065
       }
     ],
     "key_findings": [
@@ -169,25 +169,25 @@
       {
         "policy": "KUR Expansion (+20%)",
         "target_group": "Low-KUR areas (3,041 UMKMs)",
-        "avg_score_improvement": 0.88,
-        "pct_improved": 93.9,
-        "new_above_70": 14,
+        "avg_score_improvement": 0.78,
+        "pct_improved": 73.1,
+        "new_above_70": 20,
         "additional_survivors": 23
       },
       {
         "policy": "Infrastructure +30",
         "target_group": "Low-infra areas (2,507 UMKMs)",
-        "avg_score_improvement": 19.87,
+        "avg_score_improvement": 24.1,
         "pct_improved": 100.0,
-        "new_above_70": 244,
+        "new_above_70": 335,
         "additional_survivors": 88
       },
       {
         "policy": "Digital Training (50%)",
         "target_group": "Non-digital UMKMs (2,439 trained)",
-        "avg_score_improvement": 9.63,
+        "avg_score_improvement": 11.37,
         "pct_improved": 100.0,
-        "new_above_70": 325,
+        "new_above_70": 390,
         "additional_survivors": 58
       }
     ],
