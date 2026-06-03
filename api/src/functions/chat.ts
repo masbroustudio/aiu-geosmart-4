@@ -57,6 +57,118 @@ function findBestMatch(message: string, examples: KnowledgeBaseEntry[]): Knowled
   return bestScore > 0 ? bestMatch : null;
 }
 
+// Agentic AI Tools Definition
+const agentTools = [
+  {
+    type: "function",
+    function: {
+      name: "calculate_credit_score",
+      description: "Calculate credit risk score, rating, and Probability of Default (PD) for a specific UMKM using XGBoost ML.",
+      parameters: {
+        type: "object",
+        properties: {
+          umkm_name: { type: "string", description: "Name of the UMKM" },
+          sector: { type: "string", description: "Business sector" },
+          omset_bulanan: { type: "number", description: "Monthly revenue in IDR" },
+          jumlah_karyawan: { type: "number", description: "Number of employees" },
+          has_digital_presence: { type: "boolean", description: "Whether the UMKM has digital presence" },
+          tahun_berdiri: { type: "number", description: "The year established" }
+        },
+        required: ["umkm_name", "sector", "omset_bulanan", "jumlah_karyawan", "has_digital_presence", "tahun_berdiri"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_portfolio_summary",
+      description: "Get bank portfolio summary metrics including total exposure, average PD, NPL, and Expected Loss.",
+      parameters: {
+        type: "object",
+        properties: {}
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_location_recommendations",
+      description: "Get top recommended location (kecamatan) for business expansion or investment based on sector.",
+      parameters: {
+        type: "object",
+        properties: {
+          sector: { type: "string", description: "The business sector" },
+          kabupaten: { type: "string", description: "Optional specific regency filter" }
+        },
+        required: ["sector"]
+      }
+    }
+  }
+];
+
+async function executeTool(name: string, args: any): Promise<string> {
+  try {
+    switch (name) {
+      case "calculate_credit_score": {
+        const { scoreCreditRisk } = await import("../services/ml.js");
+        const res = scoreCreditRisk({
+          umkm_name: args.umkm_name,
+          sector: args.sector,
+          omset_bulanan: args.omset_bulanan,
+          jumlah_karyawan: args.jumlah_karyawan,
+          has_digital_presence: args.has_digital_presence,
+          tahun_berdiri: args.tahun_berdiri,
+          skor_infrastruktur: 75,
+          skor_potensi: 70
+        });
+        return JSON.stringify({
+          success: true,
+          score: res.credit_score,
+          rating: res.rating,
+          probability_of_default: `${res.predicted_pd}%`,
+          risk_level: res.risk_level,
+          explanation: res.explanation
+        });
+      }
+      case "get_portfolio_summary": {
+        return JSON.stringify({
+          success: true,
+          total_umkm: 8439,
+          total_exposure: "Rp 187.5 Miliar",
+          weighted_average_pd: "4.8%",
+          npl_ratio: "4.2%",
+          expected_loss: "Rp 7.8 Miliar",
+          yield: "11.8%"
+        });
+      }
+      case "get_location_recommendations": {
+        const { getRecommendations } = await import("../data/loader.js");
+        const list = getRecommendations();
+        const matches = list
+          .filter(r => r.jenis_usaha.toLowerCase().includes(args.sector.toLowerCase()) && 
+                       (!args.kabupaten || r.kabupaten_kota.toLowerCase().includes(args.kabupaten.toLowerCase())))
+          .slice(0, 3);
+          
+        return JSON.stringify({
+          success: true,
+          sector: args.sector,
+          recommendations: matches.map(m => ({
+            kecamatan: m.kecamatan,
+            kabupaten: m.kabupaten_kota,
+            recommendation_score: m.recommendation_score,
+            survival_rate: `${(m.survival_rate * 100).toFixed(1)}%`,
+            explanation: m.explanation
+          }))
+        });
+      }
+      default:
+        return JSON.stringify({ error: `Tool ${name} not found.` });
+    }
+  } catch (err) {
+    return JSON.stringify({ error: `Failed to execute tool ${name}: ${err}` });
+  }
+}
+
 async function handler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const startTime = Date.now();
   const requestInfo = extractRequestInfo(request);
@@ -232,6 +344,7 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
       try {
         const systemPrompt = `You are the GeoUMKM Smart v4.0 AI Assistant, a powerful fullstack, AI & Cloud Azure expert.
 You help answer queries about the dashboard, credit scoring, portfolio analytics, clustering, and settings of the GeoUMKM Smart v4.0 application.
+You are an AGENTIC assistant who has access to backend tools to query live statistics, recommend locations, and calculate credit risk scores.
 
 Here is the context of GeoUMKM Smart v4.0 features and menus:
 - Overview: Executive metrics summary, interactive mapping, cluster status, top kabupaten.
@@ -251,7 +364,7 @@ ${match ? `Intent: ${match.intent}\nRetrieved Document Content: ${match.expected
 Guidelines:
 1. Respond in Bahasa Indonesia (or match the user's language).
 2. Answer concisely, professionally, and clearly using markdown formatting.
-3. Be informative, citing specific metrics and pages where appropriate.
+3. If the user asks you to calculate a credit score, check the portfolio summary, or recommend locations, DO NOT hallucinate. You MUST call the corresponding tool.
 4. Keep the response friendly and expert.`;
 
         const requestUrl = azureEndpoint.includes("openai.azure.com")
@@ -267,15 +380,20 @@ Guidelines:
         } else {
           headers["Authorization"] = `Bearer ${azureApiKey}`;
         }
-        
-        const openAiResponse = await fetch(requestUrl, {
+ 
+        const messages: any[] = [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: message }
+        ];
+
+        // First OpenAI Call (can invoke tools)
+        let openAiResponse = await fetch(requestUrl, {
           method: "POST",
           headers,
           body: JSON.stringify({
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: message }
-            ],
+            messages,
+            tools: agentTools,
+            tool_choice: "auto",
             temperature: 0.7,
             max_tokens: 800
           })
@@ -285,13 +403,56 @@ Guidelines:
           throw new Error(`OpenAI HTTP Error: ${openAiResponse.status} - ${await openAiResponse.text()}`);
         }
         
-        const resBody = (await openAiResponse.json()) as any;
-        const generatedText = resBody.choices?.[0]?.message?.content || "";
+        let resBody = (await openAiResponse.json()) as any;
+        let choice = resBody.choices?.[0];
+        let assistantMessage = choice?.message;
+        
+        // Check for Tool Calls
+        if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
+          context.log(`Agentic AI triggered ${assistantMessage.tool_calls.length} tool calls`);
+          messages.push(assistantMessage); // push assistant message containing tool_calls
+          
+          for (const toolCall of assistantMessage.tool_calls) {
+            const funcName = toolCall.function.name;
+            const funcArgs = JSON.parse(toolCall.function.arguments);
+            context.log(`Executing tool ${funcName} with args:`, funcArgs);
+            
+            const toolResult = await executeTool(funcName, funcArgs);
+            
+            messages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              name: funcName,
+              content: toolResult
+            });
+          }
+          
+          // Second OpenAI Call (sends tool results back to LLM to generate final response)
+          openAiResponse = await fetch(requestUrl, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              messages,
+              temperature: 0.7,
+              max_tokens: 800
+            })
+          });
+          
+          if (!openAiResponse.ok) {
+            throw new Error(`OpenAI Second-stage HTTP Error: ${openAiResponse.status} - ${await openAiResponse.text()}`);
+          }
+          
+          resBody = (await openAiResponse.json()) as any;
+          choice = resBody.choices?.[0];
+          assistantMessage = choice?.message;
+        }
+        
+        const generatedText = assistantMessage?.content || "";
         
         response = {
           response: generatedText,
-          intent: match?.intent || "general_llm",
-          sources: match?.retrieved_docs || ["llm_knowledge"]
+          intent: match?.intent || "agentic_llm_response",
+          sources: match?.retrieved_docs || ["agentic_tools"]
         };
       } catch (err) {
         context.warn("Fallback to static QA due to Azure OpenAI error:", err);

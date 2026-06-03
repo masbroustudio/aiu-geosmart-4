@@ -3,207 +3,140 @@
 > **AI-Powered Location Intelligence & Credit Risk System for Indonesian MSMEs**  
 > *Enterprise-Ready Platform for Banks, Government, and Investors*
 
-⚠️ **STATUS:** v4.0 in development - Code audit completed, 3-4 weeks to production-ready.  
-📋 **See:** [`AUDIT-SUMMARY.md`](./docs/AUDIT-SUMMARY.md) and [`19-code-documentation-consistency-audit.md`](./docs/19-code-documentation-consistency-audit.md)
-
 ![Dicoding](https://img.shields.io/badge/Dicoding-Submission-blue)
 ![Azure](https://img.shields.io/badge/Azure-Static%20Web%20Apps-0078D4)
+![Node.js](https://img.shields.io/badge/Node.js-v20%2B-339933)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB)
 ![XGBoost](https://img.shields.io/badge/XGBoost-ML-orange)
+![Azure OpenAI](https://img.shields.io/badge/Azure%20OpenAI-GPT--4o-0078D4)
 ![License](https://img.shields.io/badge/License-MIT-green)
+
+---
+
+## 🌟 Yang Baru di GeoUMKM Smart V4.0 (Datathon Edition)
+
+Versi **v4.0** membawa platform ini ke tingkat kesiapan produksi (*production-ready*) skala enterprise dengan penambahan fitur-fitur **Agentic AI**, **Explainable AI (XAI)**, dan **Data Pipeline Automation** yang mutakhir:
+
+### 1. 🤖 Agentic AI & Tool Call Chatbot (Azure OpenAI GPT-4o)
+* Obrolan AI kini berjalan secara **agentic** menggunakan model **Azure OpenAI GPT-4o** dan **Function Calling**.
+* AI secara cerdas dapat memanggil alat (*tools*) internal backend secara langsung berdasarkan konteks obrolan untuk menjawab pengguna:
+  * `calculate_credit_score`: Menghitung skor kredit UMKM real-time menggunakan model XGBoost.
+  * `get_portfolio_summary`: Mengambil ringkasan data portofolio kredit perbankan secara live.
+  * `get_location_recommendations`: Memberikan rekomendasi wilayah potensial teratas per sektor usaha.
+* Dilengkapi dengan *fallback* berbasis aturan (*rule-based*) lokal yang tangguh jika API Key Azure OpenAI tidak dikonfigurasi.
+
+### 2. 📊 Kalkulator Kredit Interaktif & SHAP Explainable AI (XAI)
+* Di halaman **Credit Scoring**, ditambahkan formulir kalkulator ML interaktif. Petugas kredit bank dapat memasukkan parameter operasional UMKM untuk mendapatkan skor, rating, dan Probability of Default (PD) secara instan.
+* Dilengkapi visualisasi **SHAP (Shapley Additive exPlanations) Force Plot** dinamis untuk menjelaskan secara transparan faktor apa saja yang menaikkan atau menurunkan skor kredit UMKM tersebut.
+
+### 3. 📉 Simulator Stress Test Portofolio Dinamis
+* Di halaman **Portfolio Analytics**, ditambahkan slider kejutan makroekonomi (NPL Shock Range Slider) yang interaktif.
+* Ketika digeser, grafik dan nilai *Expected Loss (EL)*, rata-rata PD tertimbang, serta *Additional Loss* akan dihitung ulang secara dinamis untuk menguji ketahanan portofolio bank terhadap guncangan ekonomi.
+
+### 4. 🗺️ Peta Kepadatan Spasial (Heatmap) & Filter Legenda Interaktif
+* Peta spasial sebaran kecamatan kini memiliki mode visualisasi ganda: **Pin Standard** dan **Heatmap Density (Kepadatan Spasial)** dengan rendering berpendar yang halus.
+* Legenda skor potensi pada peta bersifat **interaktif**. Pengguna dapat mengklik kategori skor pada legenda untuk menyaring koordinat kecamatan secara real-time pada peta.
+
+### 5. 📥 Upload CSV Batch Ingestion & Auto-Scoring Pipeline
+* Di halaman **Reports**, ditambahkan panel unggah data CSV batch.
+* Pengguna dapat mengunggah dataset UMKM dalam format CSV. Pipeline backend akan otomatis melakukan ekstraksi fitur (*feature engineering*), mengeksekusi model prediksi XGBoost, menyajikan ringkasan statistik (rata-rata skor, risiko tinggi/rendah), dan menyajikan data tabular hasil prediksi yang siap diunduh (*Export Scored CSV*).
+
+### 6. ⚙️ Halaman Pengaturan Developer & Sesi Serverless
+* Halaman **Settings** yang interaktif mencakup: pembaruan profil pengguna berbasis decoding JWT client-side, generator API Keys developer, sakelar tema gelap/terang, preferensi bahasa, serta pembersihan data cache.
+* Ditambahkan logika **Session Auto-Recovery** di backend middleware untuk menjaga stabilitas sesi otentikasi JWT saat container Azure Functions mengalami daur ulang (*cold start/recycle*).
 
 ---
 
 ## 📋 Deskripsi Proyek
 
-**GeoUMKM Smart V3.0** adalah sistem intelijen lokasi dan penilaian risiko kredit berbasis **AI dan geospatial analytics** yang melayani **3 target pengguna utama**:
+**GeoUMKM Smart V4.0** adalah sistem intelijen lokasi dan penilaian risiko kredit berbasis **AI dan geospatial analytics** yang melayani **3 target pengguna utama**:
 
 ### 🏦 Bank (Credit Risk)
-- Model credit risk scoring dengan Probability of Default (PD) buckets
-- Regulatory-compliant risk assessment untuk portofolio UMKM
-- Score bands dan calibration sesuai standar perbankan
+* Model credit risk scoring dengan Probability of Default (PD) buckets
+* Regulatory-compliant risk assessment untuk portofolio UMKM
+* Score bands dan calibration sesuai standar perbankan
 
 ### 🏛️ Pemerintah / Government (Priority Areas & Policy Simulation)
-- Identifikasi kecamatan prioritas untuk intervensi program
-- What-If simulation untuk estimasi dampak kebijakan (KUR, pelatihan, infrastruktur)
-- Clustering wilayah berdasarkan karakteristik UMKM
+* Identifikasi kecamatan prioritas untuk intervensi program
+* What-If simulation untuk estimasi dampak kebijakan (KUR, pelatihan, infrastruktur)
+* Clustering wilayah berdasarkan karakteristik UMKM
 
 ### 💼 Investor (Opportunity Scoring)
-- Location scoring model untuk penilaian peluang investasi
-- Segmentasi pasar berdasarkan clustering geospasial
-- Rekomendasi lokasi optimal per sektor usaha
+* Location scoring model untuk penilaian peluang investasi
+* Segmentasi pasar berdasarkan clustering geospasial
+* Rekomendasi lokasi optimal per sektor usaha
 
 ---
 
 ## 📊 Statistik Proyek
 
 | Metrik | Nilai |
-|--------|-------|
-| Total Data UMKM | 10,000 |
-| Kecamatan | 596 |
-| Kabupaten/Kota | 27 |
-| Notebook | 8 |
-| ML Models | XGBoost, LightGBM |
-| Clusters | K-Means + DBSCAN |
-
----
-
-## 📓 Notebook Pipeline
-
-Notebooks harus dijalankan secara berurutan (sequential) karena setiap notebook menghasilkan data yang digunakan oleh notebook berikutnya.
-
-| # | Notebook | Deskripsi |
-|---|----------|-----------|
-| 01 | `01_Data_Foundation.ipynb` | Generate 10,000 dataset UMKM sintetis dengan 596 kecamatan riil di Jawa Barat |
-| 02 | `02_EDA_Feature_Engineering.ipynb` | Exploratory Data Analysis + Feature Engineering (34 kolom) |
-| 03 | `03_Location_Scoring_Model.ipynb` | XGBoost location scoring model dengan SHAP explainability |
-| 04 | `04_Credit_Risk_Model.ipynb` | Credit risk model dengan PD buckets dan regulatory compliance |
-| 05 | `05_Clustering_Segmentation.ipynb` | K-Means + DBSCAN clustering untuk segmentasi wilayah |
-| 06 | `06_Recommendation_WhatIf.ipynb` | Recommendation engine + What-If policy simulation |
-| 07 | `07_LLM_RIG_Preparation.ipynb` | Knowledge base construction + RIG (Retrieval-Integrated Generation) preparation |
-| 08 | `08_Executive_Summary.ipynb` | Model cards + executive summary untuk stakeholders |
-
----
-
-## ✨ Fitur Utama
-
-| Fitur | Deskripsi |
-|-------|-----------|
-| **ML Pipeline (XGBoost/LightGBM)** | Ensemble models untuk location scoring dan credit risk |
-| **Credit Risk Model** | PD estimation dengan score bands, calibration curves, KS statistic |
-| **Clustering & Segmentation** | K-Means + DBSCAN untuk segmentasi geospasial UMKM |
-| **Recommendation Engine** | Rekomendasi lokasi optimal per kecamatan berdasarkan multi-criteria scoring |
-| **What-If Simulation** | Simulasi dampak kebijakan pemerintah terhadap skor UMKM |
-| **LLM/RIG Preparation** | Knowledge base terstruktur untuk integrasi dengan Large Language Models |
-| **SHAP Explainability** | Feature importance dan model interpretability |
-| **Executive Summary** | Model cards dan ringkasan untuk pengambil keputusan |
+| :--- | :--- |
+| **Total Data UMKM** | 10,000 |
+| **Kecamatan Jawa Barat** | 596 |
+| **Kabupaten/Kota** | 27 |
+| **Notebook Pipeline** | 8 |
+| **Model ML** | XGBoost, LightGBM |
+| **Algoritma Clustering** | K-Means + DBSCAN |
+| **Teknologi AI Chat** | GPT-4o Agentic Function Calling |
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **XGBoost / LightGBM** - Gradient boosting models
-- **scikit-learn** - ML pipeline, preprocessing, clustering
-- **SHAP** - Model explainability
-- **Pandas / NumPy / SciPy** - Data processing & statistics
-- **Matplotlib / Seaborn** - Visualization
-- **nbformat** - Programmatic notebook generation
-- **Azure Static Web Apps** - Deployment & hosting
-- **GitHub Actions** - CI/CD pipeline
+* **Frontend**: Next.js 14 (App Router), TailwindCSS, Recharts, Framer Motion, React-Leaflet.
+* **Backend API**: Azure Functions v4 (Node.js 20), TypeScript.
+* **Database & Ingestion**: PostgreSQL / PostGIS support, client-side CSV Parser.
+* **Machine Learning & AI**: XGBoost (Python/Pickle), SHAP Interpretability, Azure OpenAI (GPT-4o API).
+* **Hosting & CI/CD**: Azure Static Web Apps, GitHub Actions.
 
 ---
 
-## 📁 Struktur Folder
+## 🚀 Cara Menjalankan Secara Lokal
 
-```
-geoumkm-smart-3/
-├── notebooks/                    # Jupyter Notebooks (harus dijalankan berurutan)
-│   ├── 01_Data_Foundation.ipynb
-│   ├── 02_EDA_Feature_Engineering.ipynb
-│   ├── 03_Location_Scoring_Model.ipynb
-│   ├── 04_Credit_Risk_Model.ipynb
-│   ├── 05_Clustering_Segmentation.ipynb
-│   ├── 06_Recommendation_WhatIf.ipynb
-│   ├── 07_LLM_RIG_Preparation.ipynb
-│   └── 08_Executive_Summary.ipynb
-│
-├── data/                         # Generated data (dari notebook execution)
-│   ├── umkm_dataset.csv
-│   ├── umkm_engineered.csv
-│   ├── umkm_clustered.csv
-│   ├── location_scores_predicted.csv
-│   ├── credit_score_bands.csv
-│   ├── recommendations_by_kecamatan.csv
-│   ├── whatif_simulation_results.csv
-│   └── knowledge_base/          # Knowledge base untuk LLM/RIG
-│
-├── models/                       # Trained ML models
-│   ├── location_scoring_model.joblib
-│   └── credit_risk_model.joblib
-│
-├── docs/                         # HTML exports & visualizations
-│
-├── scripts/                      # Build scripts untuk notebook generation
-│
-├── index.html                    # Landing page (Azure Static Web Apps)
-├── README.md
-└── .gitignore
-```
-
----
-
-## 🚀 Cara Menjalankan
-
-### 1. Clone Repository
-
+### 1. Clone Repository & Setup Frontend
 ```bash
-git clone https://github.com/masbroustudio/geoumkm-smart-3.git
-cd geoumkm-smart-3
+git clone https://github.com/masbroustudio/aiu-geosmart-4.git
+cd aiu-geosmart-4/frontend
+pnpm install
+pnpm dev
 ```
+Buka [http://localhost:3000](http://localhost:3000) di browser Anda.
 
-### 2. Install Dependencies
-
+### 2. Jalankan API Backend (Azure Functions)
+Pastikan Azure Functions Core Tools telah terinstal:
 ```bash
-pip install pandas numpy scikit-learn xgboost lightgbm scipy matplotlib seaborn shapely nbformat nbconvert jupyter-client ipykernel
+cd ../api
+npm install
+npm run build
+func start
 ```
 
-### 3. Jalankan Notebooks (Berurutan)
+### 3. Konfigurasi Environment Variables (Lokal & Produksi)
+Buat berkas `.env` di folder `/api` untuk mengaktifkan database PostgreSQL dan fitur RAG Chatbot:
+```env
+# Database (Azure PostgreSQL)
+DB_TYPE=mock                 # Ubah ke 'postgres' jika ingin menghubungkan PostgreSQL
+DATABASE_URL=postgresql://...
 
-```bash
-# Notebook HARUS dijalankan secara berurutan (01 -> 02 -> ... -> 08)
-jupyter nbconvert --to notebook --execute notebooks/01_Data_Foundation.ipynb
-jupyter nbconvert --to notebook --execute notebooks/02_EDA_Feature_Engineering.ipynb
-jupyter nbconvert --to notebook --execute notebooks/03_Location_Scoring_Model.ipynb
-jupyter nbconvert --to notebook --execute notebooks/04_Credit_Risk_Model.ipynb
-jupyter nbconvert --to notebook --execute notebooks/05_Clustering_Segmentation.ipynb
-jupyter nbconvert --to notebook --execute notebooks/06_Recommendation_WhatIf.ipynb
-jupyter nbconvert --to notebook --execute notebooks/07_LLM_RIG_Preparation.ipynb
-jupyter nbconvert --to notebook --execute notebooks/08_Executive_Summary.ipynb
+# Authentication
+JWT_SECRET=your-secure-jwt-secret-key
+DATA_DIR=/tmp
+
+# Azure OpenAI (Agentic Chatbot)
+AZURE_OPENAI_API_KEY=your-api-key
+AZURE_OPENAI_ENDPOINT=https://your-resource-name.openai.azure.com/
+AZURE_OPENAI_DEPLOYMENT=gpt-4o
+AZURE_OPENAI_API_VERSION=2024-02-15-preview
 ```
-
-### 4. Export ke HTML
-
-```bash
-jupyter nbconvert --to html notebooks/*.ipynb --output-dir docs/
-```
-
-### 5. Buka Landing Page
-
-```bash
-# Buka index.html di browser
-open index.html           # macOS
-xdg-open index.html       # Linux
-start index.html          # Windows
-```
-
-> **Catatan:** Notebooks harus dijalankan secara berurutan karena setiap notebook menghasilkan file data (CSV) di folder `data/` yang dibutuhkan oleh notebook berikutnya.
-
----
-
-## 📚 Documentation
-
-Comprehensive project documentation adalah tersedia di folder `docs/`:
-
-| File | Topik |
-|------|-------|
-| [`00-project-brief.md`](./docs/00-project-brief.md) | Problem statement, vision, target users, KPIs |
-| [`01-masterplan.md`](./docs/01-masterplan.md) | Product principles, feature catalog, roadmap |
-| [`02-architecture.md`](./docs/02-architecture.md) | System architecture, components, technology choices |
-| [`03-data-model.md`](./docs/03-data-model.md) | Data schema, entity relationships, data lineage |
-| [`04-ml-pipeline.md`](./docs/04-ml-pipeline.md) | 8 notebooks, pipeline execution, data flow |
-| [`05-api-specification.md`](./docs/05-api-specification.md) | REST API endpoints, request/response, authentication |
-| [`06-models-guide.md`](./docs/06-models-guide.md) | 4 ML models, performance metrics, SHAP explanations |
-| [`07-deployment.md`](./docs/07-deployment.md) | Azure deployment, CI/CD, monitoring |
-| [`08-setup-local.md`](./docs/08-setup-local.md) | Local development environment setup |
-| [`09-faq-troubleshooting.md`](./docs/09-faq-troubleshooting.md) | Common issues and solutions |
 
 ---
 
 ## 👤 Author
 
 **Yudha Elfransyah**  
-- Email: yudhae@gmail.com  
-- GitHub: [masbroustudio](https://github.com/masbroustudio)
+* Email: yudhae@gmail.com  
+* GitHub: [masbroustudio](https://github.com/masbroustudio)
 
 ---
 

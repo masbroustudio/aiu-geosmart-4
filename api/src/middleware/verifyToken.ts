@@ -1,13 +1,14 @@
 import { HttpRequest, InvocationContext } from '@azure/functions';
 import jwt from 'jsonwebtoken';
 import { getUserById } from '../db/users';
-
+import { getPool } from '../db/pool';
+ 
 export interface AuthContext {
   userId: number;
   email: string;
   role: string;
 }
-
+ 
 export const verifyToken = async (
   request: HttpRequest,
   context: InvocationContext
@@ -17,25 +18,39 @@ export const verifyToken = async (
     if (!authHeader) {
       return null;
     }
-
+ 
     const token = authHeader.split(' ')[1];
     if (!token) {
       return null;
     }
-
+ 
     const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-me';
     const decoded = jwt.verify(token, jwtSecret) as {
       userId: number;
       email: string;
       role: string;
     };
-
+ 
     // Verify user still exists and is active
-    const user = await getUserById(decoded.userId);
+    let user = await getUserById(decoded.userId);
+    
+    // Auto-reconstruct user in mock mode to survive serverless container recycles
+    if (!user && getPool().mock) {
+      context.log(`Auto-reconstructing user ${decoded.email} from token claims`);
+      user = {
+        id: decoded.userId,
+        email: decoded.email,
+        role: decoded.role,
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date()
+      };
+    }
+ 
     if (!user) {
       return null;
     }
-
+ 
     return {
       userId: decoded.userId,
       email: decoded.email,

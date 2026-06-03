@@ -6,14 +6,15 @@ import {
 } from '@azure/functions';
 import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { getUserByEmail } from '../../db/users';
+import { getUserByEmail, createUser } from '../../db/users';
+import { getPool } from '../../db/pool';
 import { logAudit, extractRequestInfo } from '../../services/audit';
-
+ 
 interface LoginRequest {
   email: string;
   password: string;
 }
-
+ 
 interface LoginResponse {
   success: boolean;
   message?: string;
@@ -25,14 +26,14 @@ interface LoginResponse {
   };
   error?: string;
 }
-
+ 
 async function handler(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   const startTime = Date.now();
   const requestInfo = extractRequestInfo(request);
-
+ 
   try {
     if (request.method !== 'POST') {
       return {
@@ -40,9 +41,9 @@ async function handler(
         jsonBody: { success: false, error: 'Method not allowed' } as LoginResponse,
       };
     }
-
+ 
     const body = (await request.json()) as LoginRequest;
-
+ 
     // Validate input
     if (!body.email || !body.password) {
       await logAudit({
@@ -54,7 +55,7 @@ async function handler(
         userAgent: requestInfo.userAgent,
         responseTimeMs: Date.now() - startTime,
       });
-
+ 
       return {
         status: 400,
         jsonBody: {
@@ -63,9 +64,17 @@ async function handler(
         } as LoginResponse,
       };
     }
-
+ 
     // Get user by email
-    const user = await getUserByEmail(body.email);
+    let user = await getUserByEmail(body.email);
+    
+    // Auto-create user on login in mock mode to survive container restarts
+    if (!user && getPool().mock) {
+      context.log(`Auto-creating user ${body.email} in mock database to survive container recycle.`);
+      const hashedPassword = await bcryptjs.hash(body.password, 10);
+      user = await createUser(body.email, hashedPassword, body.email.split('@')[0], 'viewer');
+    }
+
     if (!user) {
       await logAudit({
         action: 'login_failed',
