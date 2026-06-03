@@ -1,5 +1,5 @@
 import { HttpRequest, InvocationContext } from '@azure/functions';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import { getUserById } from '../db/users';
 import { getPool } from '../db/pool';
  

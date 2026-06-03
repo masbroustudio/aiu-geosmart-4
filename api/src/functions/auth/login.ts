@@ -4,8 +4,8 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from '@azure/functions';
-import bcryptjs from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import * as bcryptjs from 'bcryptjs';
+import * as jwt from 'jsonwebtoken';
 import { getUserByEmail, createUser } from '../../db/users';
 import { getPool } from '../../db/pool';
 import { logAudit, extractRequestInfo } from '../../services/audit';
