@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MapPin, Loader2 } from "lucide-react";
-import { api } from "@/lib/api";
+import { login } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,16 +20,16 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const result = await api.post("/auth/login", { email, password });
+      const result = await login(email, password);
       
-      if (result.success) {
+      if (result) {
         setSuccess(true);
         // Redirect to dashboard after 1 second
         setTimeout(() => {
           router.push("/dashboard");
         }, 1000);
       } else {
-        setError(result.error || "Login gagal");
+        setError("Email atau password salah");
       }
     } catch (err) {
       setError("Terjadi kesalahan saat login. Coba lagi.");

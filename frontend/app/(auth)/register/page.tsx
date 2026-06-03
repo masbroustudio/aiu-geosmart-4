@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MapPin, Loader2 } from "lucide-react";
-import { api } from "@/lib/api";
+import { register } from "@/lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -33,20 +33,16 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const result = await api.post("/auth/register", {
-        email,
-        password,
-        name
-      });
+      const result = await register(email, password, name);
 
-      if (result.success) {
+      if (result) {
         setSuccess(true);
         // Redirect to login after 1 second
         setTimeout(() => {
           router.push("/login");
         }, 1000);
       } else {
-        setError(result.error || "Registrasi gagal");
+        setError("Registrasi gagal. Email mungkin sudah terdaftar.");
       }
     } catch (err) {
       setError("Terjadi kesalahan saat registrasi. Coba lagi.");
