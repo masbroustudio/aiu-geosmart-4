@@ -23,5 +23,8 @@
     "x-content-type-options": "nosniff",
     "x-frame-options": "DENY"
   },
+  "platform": {
+    "apiRuntime": "node:20"
+  },
   "version": "1.0"
 }
