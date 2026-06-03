@@ -114,8 +114,8 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
         },
       },
     };
-  } catch (error) {
-    const isAuthError = error instanceof Error && error.message === 'Unauthorized';
+  } catch (error: any) {
+    const isAuthError = error instanceof Error && error.message.startsWith('Unauthorized');
     const statusCode = isAuthError ? 401 : 500;
     
     context.error("Error in overview handler:", error);
@@ -133,7 +133,7 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
 
     return {
       status: statusCode,
-      jsonBody: { success: false, error: isAuthError ? "Unauthorized: Valid token required" : "Internal server error" },
+      jsonBody: { success: false, error: isAuthError ? error.message : "Internal server error" },
     };
   }
 }

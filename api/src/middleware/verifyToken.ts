@@ -16,20 +16,17 @@ export const verifyToken = async (
   try {
     const authHeader = request.headers.get('Authorization') || request.headers.get('authorization');
     if (!authHeader) {
-      context.warn('verifyToken: Authorization header not found');
-      return null;
+      throw new Error('Authorization header not found');
     }
  
     const parts = authHeader.split(' ');
     if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
-      context.warn('verifyToken: Authorization header format is invalid (must be Bearer <token>)');
-      return null;
+      throw new Error('Authorization header format is invalid (must be Bearer <token>)');
     }
 
     const token = parts[1];
     if (!token) {
-      context.warn('verifyToken: Token is empty');
-      return null;
+      throw new Error('Token is empty');
     }
  
     const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-me';
@@ -37,13 +34,11 @@ export const verifyToken = async (
     try {
       decoded = jwt.verify(token, jwtSecret);
     } catch (err: any) {
-      context.error(`verifyToken: JWT verification failed: ${err.message || err}`);
-      return null;
+      throw new Error(`JWT verification failed: ${err.message || err} (secret length: ${jwtSecret.length})`);
     }
 
     if (!decoded || (!decoded.userId && !decoded.id)) {
-      context.warn('verifyToken: Decoded token payload is missing userId/id claim');
-      return null;
+      throw new Error('Decoded token payload is missing userId/id claim');
     }
 
     // Handle both userId and id claim names just in case
@@ -53,8 +48,7 @@ export const verifyToken = async (
     const role = decoded.role || 'viewer';
 
     if (isNaN(userId)) {
-      context.error(`verifyToken: Invalid userId format: ${rawUserId}`);
-      return null;
+      throw new Error(`Invalid userId format in token: ${rawUserId}`);
     }
  
     // Verify user still exists and is active
@@ -74,8 +68,7 @@ export const verifyToken = async (
     }
  
     if (!user) {
-      context.warn(`verifyToken: User ${userId} (${email}) not found in database and cannot be reconstructed.`);
-      return null;
+      throw new Error(`User ${userId} (${email}) not found in database and cannot be reconstructed.`);
     }
  
     return {
@@ -84,20 +77,24 @@ export const verifyToken = async (
       role: user.role,
     };
   } catch (error: any) {
-    context.error('verifyToken: Unexpected verification error:', error.message || error);
-    return null;
+    context.error('verifyToken error:', error.message || error);
+    throw error;
   }
 };
-
+ 
 export const requireAuth = async (
   request: HttpRequest,
   context: InvocationContext
 ): Promise<AuthContext> => {
-  const auth = await verifyToken(request, context);
-  if (!auth) {
-    throw new Error('Unauthorized');
+  try {
+    const auth = await verifyToken(request, context);
+    if (!auth) {
+      throw new Error('Unauthorized');
+    }
+    return auth;
+  } catch (err: any) {
+    throw new Error(`Unauthorized: ${err.message || err}`);
   }
-  return auth;
 };
 
 export const requireRole = (allowedRoles: string[]) => {
