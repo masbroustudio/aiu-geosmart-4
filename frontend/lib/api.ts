@@ -578,3 +578,52 @@ export async function simulatePolicy(allocations: number[], totalBudget: number)
   }
 }
 
+export interface WhatIfResponse {
+  scenarios: Array<{
+    scenario: string;
+    affected: number;
+    before: number;
+    after: number;
+    improvement: number;
+    max_improvement: number;
+    pct_improved: number;
+    above_70: number;
+  }>;
+  input: any;
+}
+
+export async function simulateWhatIf(body: {
+  infrastructure_improvement?: number;
+  new_bank_distance?: number;
+  internet_pct_increase?: number;
+  target_kecamatan?: string;
+  scenario?: string;
+}): Promise<WhatIfResponse | null> {
+  if (!BASE_URL) return null;
+  try {
+    const res = await fetch(`${BASE_URL}/api/whatif`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(body),
+    });
+    
+    if (res.status === 401) {
+      clearAuthToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('unauthorized'));
+      }
+      return null;
+    }
+    
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json.success && json.data) {
+      return json.data as WhatIfResponse;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+

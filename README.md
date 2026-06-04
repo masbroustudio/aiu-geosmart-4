@@ -15,7 +15,7 @@
 
 ## 🌟 Yang Baru di GeoUMKM Smart V4.0 (Datathon Edition)
 
-Versi **v4.0** membawa platform ini ke tingkat kesiapan produksi (*production-ready*) skala enterprise dengan penambahan fitur-fitur **Agentic AI**, **Explainable AI (XAI)**, dan **Data Pipeline Automation** yang mutakhir:
+Versi **v4.0** membawa platform ini ke tingkat kesiapan produksi (*production-ready*) skala enterprise dengan penambahan fitur-fitur **Agentic AI**, **Explainable AI (XAI)**, **Enterprise Database & Queue Systems**, serta **Data Pipeline Automation** yang mutakhir:
 
 ### 1. 🤖 Agentic AI & Tool Call Chatbot (Azure OpenAI GPT-4o)
 * Obrolan AI kini berjalan secara **agentic** menggunakan model **Azure OpenAI GPT-4o** dan **Function Calling**.
@@ -25,25 +25,42 @@ Versi **v4.0** membawa platform ini ke tingkat kesiapan produksi (*production-re
   * `get_location_recommendations`: Memberikan rekomendasi wilayah potensial teratas per sektor usaha.
 * Dilengkapi dengan *fallback* berbasis aturan (*rule-based*) lokal yang tangguh jika API Key Azure OpenAI tidak dikonfigurasi.
 
-### 2. 📊 Kalkulator Kredit Interaktif & SHAP Explainable AI (XAI)
-* Di halaman **Credit Scoring**, ditambahkan formulir kalkulator ML interaktif. Petugas kredit bank dapat memasukkan parameter operasional UMKM untuk mendapatkan skor, rating, dan Probability of Default (PD) secara instan.
-* Dilengkapi visualisasi **SHAP (Shapley Additive exPlanations) Force Plot** dinamis untuk menjelaskan secara transparan faktor apa saja yang menaikkan atau menurunkan skor kredit UMKM tersebut.
+### 2. 🗄️ Konektivitas Azure PostgreSQL & Auto-Seeding
+* Mendukung penuh koneksi basis data relasional riil dengan data seeding otomatis saat inisialisasi untuk 10.000 records (tabel `umkm_dataset` dan `umkm_clustered`).
+* Halaman dasbor (Overview, Clustering, & Credit Scoring) mengambil data secara dinamis menggunakan query SQL (dengan fallback otomatis ke CSV jika basis data dinonaktifkan).
 
-### 3. 📉 Simulator Stress Test Portofolio Dinamis
-* Di halaman **Portfolio Analytics**, ditambahkan slider kejutan makroekonomi (NPL Shock Range Slider) yang interaktif.
-* Ketika digeser, grafik dan nilai *Expected Loss (EL)*, rata-rata PD tertimbang, serta *Additional Loss* akan dihitung ulang secara dinamis untuk menguji ketahanan portofolio bank terhadap guncangan ekonomi.
+### 3. 🛡️ Keamanan & Integrasi API Keys Developer
+* Halaman **Settings** kini dilengkapi modul pembuatan, penayangan, dan pencabutan (revoke) **Developer API Keys** yang aman (disimpan di DB dengan enkripsi SHA-256).
+* Dilengkapi dengan bypass interseptor header Azure Static Web Apps menggunakan header kustom `X-Custom-Authorization` pada middleware backend untuk otentikasi JWT dan validasi `X-API-Key`.
 
-### 4. 🗺️ Peta Kepadatan Spasial (Heatmap) & Filter Legenda Interaktif
-* Peta spasial sebaran kecamatan kini memiliki mode visualisasi ganda: **Pin Standard** dan **Heatmap Density (Kepadatan Spasial)** dengan rendering berpendar yang halus.
-* Legenda skor potensi pada peta bersifat **interaktif**. Pengguna dapat mengklik kategori skor pada legenda untuk menyaring koordinat kecamatan secara real-time pada peta.
+### 4. 📈 Penyimpanan Skenario Simulasi Kebijakan
+* Pengguna dapat menyimpan, memberi nama, memuat kembali (load), dan menghapus riwayat skenario alokasi anggaran daerah yang telah dirancang langsung ke database PostgreSQL/Mock.
 
-### 5. 📥 Upload CSV Batch Ingestion & Auto-Scoring Pipeline
-* Di halaman **Reports**, ditambahkan panel unggah data CSV batch.
-* Pengguna dapat mengunggah dataset UMKM dalam format CSV. Pipeline backend akan otomatis melakukan ekstraksi fitur (*feature engineering*), mengeksekusi model prediksi XGBoost, menyajikan ringkasan statistik (rata-rata skor, risiko tinggi/rendah), dan menyajikan data tabular hasil prediksi yang siap diunduh (*Export Scored CSV*).
+### 5. 🔮 Simulasi Geospasial Berbasis Model ML di Backend
+* Kalkulasi simulasi anggaran daerah kini dijalankan di backend (`POST /api/policy/simulate`).
+* Menghasilkan prediksi peningkatan skor potensi per kecamatan secara dinamis dan non-linear berdasarkan hukum *diminishing returns* (kurva logaritma) menggunakan bobot target potensi masing-masing klaster.
 
-### 6. ⚙️ Halaman Pengaturan Developer & Sesi Serverless
-* Halaman **Settings** yang interaktif mencakup: pembaruan profil pengguna berbasis decoding JWT client-side, generator API Keys developer, sakelar tema gelap/terang, preferensi bahasa, serta pembersihan data cache.
-* Ditambahkan logika **Session Auto-Recovery** di backend middleware untuk menjaga stabilitas sesi otentikasi JWT saat container Azure Functions mengalami daur ulang (*cold start/recycle*).
+### 6. 📥 Ingestion Pipeline Asinkron (Simulasi Background Job Queue)
+* Pengunggahan file CSV batch berukuran besar dipindahkan ke backend secara asinkron (`POST /api/reports/batch-score/upload`) dengan antrean latar belakang (*background job queue*).
+* Menghindari browser *freeze* (macet) pada berkas >50.000 baris dengan memproses data dalam pecahan (*chunks*), serta dilengkapi *polling status* dan antarmuka progres persentase secara real-time pada UI laporan.
+
+### 7. ⏱️ Dynamic Clustering Retraining Scheduler
+* Mengimplementasikan penjadwal (Azure Functions Timer Trigger) dan API manual pengembang (`POST /api/developer/clustering/retrain`) yang melatih kembali sentroid K-Means dan DBSCAN pada tabel basis data ketika ada penambahan UMKM baru secara signifikan.
+
+### 8. 📊 Credit Scoring Interaktif & SHAP Explainable AI (XAI)
+* Kalkulator ML interaktif di halaman **Credit Scoring** untuk menghitung skor kredit UMKM (300-850), rating, dan PD secara instan menggunakan model XGBoost.
+* Dilengkapi visualisasi **SHAP (Shapley Additive exPlanations)** dinamis untuk menjelaskan faktor apa saja yang menaikkan atau menurunkan skor kredit tersebut.
+
+### 9. 📈 Simulator Stress Test Portofolio Dinamis
+* Slider kejutan makroekonomi (NPL Shock Range Slider) yang interaktif untuk menguji ketahanan portofolio bank terhadap guncangan ekonomi secara dinamis.
+
+### 10. 🗺️ Peta Kepadatan Spasial (Heatmap) & Legenda Interaktif
+* Peta spasial sebaran kecamatan dengan mode visualisasi ganda (**Pin Standard** dan **Heatmap Density**) serta legenda interaktif yang berfungsi sebagai filter koordinat secara real-time pada peta.
+* Integrasi *What-If Simulator* Location Intelligence langsung ke backend endpoint `/api/whatif`.
+
+### 11. 📄 Perbaikan Ekspor PDF Laporan
+* Menggunakan metode impor modular ESM untuk JS-AutoTable (`jspdf-autotable`) guna menjamin kompatibilitas penuh dan menghindari kegagalan ekspor PDF di Next.js.
+
 
 ---
 

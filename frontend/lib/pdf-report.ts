@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 interface CreditReportData {
   bands: { rating: string; scoreRange: string; count: number; pctPortfolio: string; defaultRate: string; meanPD: string }[];
@@ -63,7 +63,7 @@ export function generateCreditReport(data: CreditReportData) {
   doc.setTextColor(30, 41, 59);
   doc.text('Credit Score Bands', 14, 75);
 
-  (doc as unknown as { autoTable: (options: Record<string, unknown>) => void }).autoTable({
+  autoTable(doc, {
     startY: 79,
     head: [['Rating', 'Score Range', 'Count', 'Portfolio %', 'Default Rate', 'Mean PD']],
     body: data.bands.map(b => [b.rating, b.scoreRange, b.count.toLocaleString(), b.pctPortfolio, b.defaultRate, b.meanPD]),
@@ -80,7 +80,7 @@ export function generateCreditReport(data: CreditReportData) {
   doc.setTextColor(30, 41, 59);
   doc.text('PD Regulatory Buckets', 14, 45);
 
-  (doc as unknown as { autoTable: (options: Record<string, unknown>) => void }).autoTable({
+  autoTable(doc, {
     startY: 49,
     head: [['Bucket', 'Count', 'Portfolio %', 'Default Rate', 'Avg PD', 'Expected Loss']],
     body: data.pdBuckets.map(b => [b.bucket, b.count.toLocaleString(), b.pctPortfolio, b.defaultRate, b.avgPD, b.expectedLoss]),
@@ -117,7 +117,7 @@ export function generateGovernmentReport(data: GovReportData) {
   doc.setTextColor(30, 41, 59);
   doc.text('Government Priority Ranking', 14, 75);
 
-  (doc as unknown as { autoTable: (options: Record<string, unknown>) => void }).autoTable({
+  autoTable(doc, {
     startY: 79,
     head: [['Rank', 'Cluster', 'UMKM Count', 'Priority Score', 'Budget %']],
     body: data.govPriority.map(g => [`#${g.rank}`, g.cluster, g.n_umkm.toLocaleString(), g.priority_score.toFixed(3), `${g.budget_pct}%`]),
@@ -134,7 +134,7 @@ export function generateGovernmentReport(data: GovReportData) {
   doc.setTextColor(30, 41, 59);
   doc.text('Priority Kecamatan', 14, 45);
 
-  (doc as unknown as { autoTable: (options: Record<string, unknown>) => void }).autoTable({
+  autoTable(doc, {
     startY: 49,
     head: [['Rank', 'Kecamatan', 'Kabupaten', 'Avg Score', 'Factor', 'Recommendation']],
     body: data.priorityKecamatan.map(k => [`#${k.rank}`, k.kecamatan, k.kabupaten, k.avg_skor.toFixed(2), k.factor, k.recommendation]),
@@ -172,7 +172,7 @@ export function generateInvestmentReport(data: InvestmentReportData) {
   doc.setTextColor(30, 41, 59);
   doc.text('Investment Opportunity Matrix', 14, 75);
 
-  (doc as unknown as { autoTable: (options: Record<string, unknown>) => void }).autoTable({
+  autoTable(doc, {
     startY: 79,
     head: [['Rank', 'Cluster', 'UMKM Count', 'Investment Score', 'Market Size (Juta)']],
     body: data.investment.map(inv => [`#${inv.rank}`, inv.cluster, inv.n_umkm.toLocaleString(), inv.investment_score.toFixed(3), inv.market_size_juta.toLocaleString()]),
@@ -188,7 +188,7 @@ export function generateInvestmentReport(data: InvestmentReportData) {
   const lastTableY = 79 + (data.investment.length + 2) * 10 + 10;
   doc.text('Cluster Profiles', 14, lastTableY);
 
-  (doc as unknown as { autoTable: (options: Record<string, unknown>) => void }).autoTable({
+  autoTable(doc, {
     startY: lastTableY + 4,
     head: [['Cluster', 'UMKM Count', 'Avg Score', 'Digital %', 'Survival Rate']],
     body: data.profiles.map(p => [p.name, p.n_umkm.toLocaleString(), p.avg_score.toFixed(1), `${p.digital_pct}%`, `${p.survival_rate}%`]),

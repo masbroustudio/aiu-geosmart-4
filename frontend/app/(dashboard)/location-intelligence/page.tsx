@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { MapPin, Search, Sliders } from 'lucide-react';
 import { recommendData as staticRecommendData, policyData as staticPolicyData, kecamatanDetailData } from '@/lib/static-data';
-import { fetchRecommendations, fetchPolicy } from '@/lib/api';
+import { fetchRecommendations, fetchPolicy, simulateWhatIf } from '@/lib/api';
 import DownloadCSVButton from '@/components/ui/DownloadCSVButton';
 import ComparisonRadarChart from '@/components/dashboard/ComparisonRadarChart';
+import { useToast } from '@/lib/toast-context';
 
 const jenisUsahaOptions = ['Semua', 'Makanan', 'Fashion', 'Kerajinan', 'Jasa', 'Pertanian'];
 const kabupatenOptions = ['Semua', 'Kota Bekasi', 'Kota Depok', 'Kota Bandung', 'Kab. Bogor', 'Kota Cimahi'];
@@ -13,6 +14,7 @@ const kabupatenOptions = ['Semua', 'Kota Bekasi', 'Kota Depok', 'Kota Bandung', 
 type WhatIfScenario = typeof staticPolicyData.whatifScenarios[number];
 
 export default function LocationIntelligencePage() {
+  const { addToast } = useToast();
   const [jenisUsaha, setJenisUsaha] = useState('Semua');
   const [kabupaten, setKabupaten] = useState('Semua');
   const [infra, setInfra] = useState(50);
@@ -55,33 +57,47 @@ export default function LocationIntelligencePage() {
     return true;
   });
 
-  const handleSimulate = () => {
-    // Determine which slider was adjusted most from the default (50)
+  const runLocalFallbackSimulation = () => {
     const infraDelta = Math.abs(infra - 50);
     const bankDelta = Math.abs(bankDist - 50);
     const internetDelta = Math.abs(internet - 50);
-
     const maxDelta = Math.max(infraDelta, bankDelta, internetDelta);
 
     let bestScenario: WhatIfScenario;
     if (maxDelta === infraDelta) {
-      // Infrastructure slider moved most - find infrastructure scenario
       bestScenario = whatifScenarios.find(s =>
         s.scenario.toLowerCase().includes('infrastructure')
       ) || whatifScenarios[0];
     } else if (maxDelta === bankDelta) {
-      // Bank distance slider moved most - find bank scenario
       bestScenario = whatifScenarios.find(s =>
         s.scenario.toLowerCase().includes('bank')
       ) || whatifScenarios[1];
     } else {
-      // Internet slider moved most - find internet scenario
       bestScenario = whatifScenarios.find(s =>
         s.scenario.toLowerCase().includes('internet')
       ) || whatifScenarios[2];
     }
-
     setSimResult(bestScenario);
+  };
+
+  const handleSimulate = async () => {
+    try {
+      const response = await simulateWhatIf({
+        infrastructure_improvement: infra - 50,
+        new_bank_distance: 50 - bankDist,
+        internet_pct_increase: internet - 50,
+      });
+
+      if (response && response.scenarios && response.scenarios.length > 0) {
+        setSimResult(response.scenarios[0]);
+        addToast("Simulasi What-If diproses di server!", "success");
+      } else {
+        runLocalFallbackSimulation();
+      }
+    } catch (err) {
+      console.error("Gagal menjalankan simulasi What-If di server:", err);
+      runLocalFallbackSimulation();
+    }
   };
 
   if (loading) {
