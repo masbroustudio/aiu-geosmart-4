@@ -225,6 +225,93 @@ export default function PolicySimulationPage() {
     }));
   })();
 
+  // Dynamic whatif scenarios based on budget allocations
+  const dynamicWhatifScenarios = (() => {
+    if (!policyData || !policyData.whatifScenarios) return [];
+
+    return policyData.whatifScenarios.map((s) => {
+      let allocationPct = 0;
+      let multiplier = 1.0;
+
+      if (s.scenario.includes("Infrastructure")) {
+        allocationPct = (allocations[2] * 1.0 + allocations[1] * 0.5);
+        multiplier = 1.1;
+      } else if (s.scenario.includes("bank branch")) {
+        allocationPct = (allocations[0] * 1.0 + allocations[1] * 0.4);
+        multiplier = 0.8;
+      } else if (s.scenario.includes("Internet coverage")) {
+        allocationPct = (allocations[3] * 1.2 + allocations[0] * 0.3);
+        multiplier = 1.0;
+      }
+
+      const allocatedBudget = totalBudget * (allocationPct / 100);
+      const budgetFactor = allocatedBudget / 10_000_000_000;
+      const dynamicImprovement = budgetFactor > 0 
+        ? Math.min(25, Math.log1p(budgetFactor) * 6.5 * multiplier) 
+        : 0;
+
+      const after = Math.min(100, s.before + dynamicImprovement);
+      const improvement = after - s.before;
+      
+      const above_70 = dynamicImprovement > 15 
+        ? Math.round(s.affected * 0.08 * (dynamicImprovement / 15)) 
+        : dynamicImprovement > 5 
+          ? Math.round(s.affected * 0.02 * (dynamicImprovement / 5))
+          : 0;
+
+      const pct_improved = dynamicImprovement > 0
+        ? Math.min(100, parseFloat((80 + (dynamicImprovement / 25) * 20).toFixed(1)))
+        : s.pct_improved || 0;
+
+      return {
+        ...s,
+        after: Number(after.toFixed(2)),
+        improvement: Number(improvement.toFixed(2)),
+        above_70,
+        pct_improved
+      };
+    });
+  })();
+
+  // Dynamic AI Advisory Recommendation based on highest allocation
+  const dynamicAIAdvisory = (() => {
+    const financialScore = allocations[0] * 0.8 + allocations[1] * 0.6;
+    const infraScore = allocations[2] * 1.0 + allocations[1] * 0.4;
+    const digitalScore = allocations[3] * 1.0 + allocations[4] * 1.0 + allocations[0] * 0.2;
+
+    const formattedBudget = (amount: number) => {
+      if (amount >= 1_000_000_000_000) return `Rp ${(amount / 1_000_000_000_000).toFixed(2)} Triliun`;
+      if (amount >= 1_000_000_000) return `Rp ${(amount / 1_000_000_000).toFixed(2)} Miliar`;
+      return `Rp ${amount.toLocaleString('id-ID')}`;
+    };
+
+    if (financialScore >= infraScore && financialScore >= digitalScore) {
+      const budgetVal = totalBudget * ((allocations[0] + allocations[1]) / 100);
+      return {
+        title: "Rekomendasi Utama: Akses Keuangan & Kredit Usaha",
+        type: "financial",
+        description: `Skenario anggaran Anda memfokuskan dana sebesar ${formattedBudget(budgetVal)} pada inklusi finansial. OJK & BI merekomendasikan pemerintah daerah meningkatkan kehadiran agen perbankan laku pandai di kecamatan prioritas finansial (seperti Kertajati & Bantarkalong). Suku bunga KUR bersubsidi sebaiknya diintegrasikan dengan credit scoring XGBoost untuk menyaring debitur layak secara presisi.`,
+        action: "Perluas Agen Finansial & Kampanye KUR Mikro"
+      };
+    } else if (infraScore >= financialScore && infraScore >= digitalScore) {
+      const budgetVal = totalBudget * ((allocations[2] + allocations[1]) / 100);
+      return {
+        title: "Rekomendasi Utama: Pembangunan Infrastruktur Penunjang",
+        type: "infrastructure",
+        description: `Anda memprioritaskan alokasi infrastruktur fisik sebesar ${formattedBudget(budgetVal)}. Rekomendasi teknis dinas PUPR: Fokuskan rehabilitasi jalan tani, penyediaan sarana air bersih, dan revitalisasi pasar tradisional di kecamatan pegunungan Sukabumi (seperti Gegerbitung) dan Garut (seperti Singajaya) guna menekan biaya logistik distribusi komoditas UMKM.`,
+        action: "Rehabilitasi Jalan Penghubung & Pasar Tradisional"
+      };
+    } else {
+      const budgetVal = totalBudget * ((allocations[3] + allocations[4] + allocations[0] * 0.2) / 100);
+      return {
+        title: "Rekomendasi Utama: Akselerasi Ekosistem Digital & Internet",
+        type: "digital",
+        description: `Alokasi anggaran mengarah pada ekosistem digital sebesar ${formattedBudget(budgetVal)}. Diskominfo merekomendasikan peluncuran program pelatihan literasi keuangan digital intensif 'Jabar Go-Digital' dengan menggandeng lokapasar nasional. Prioritaskan pembangunan menara pemancar internet (BTS) di Sagaranten, Cisompet, dan Cihurip yang masih memiliki penetrasi internet rendah.`,
+        action: "Pelatihan Lokapasar & Pembangunan Infrastruktur BTS"
+      };
+    }
+  })();
+
   // Actions
   const handleSaveScenario = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -712,6 +799,21 @@ export default function PolicySimulationPage() {
         </div>
       </div>
 
+      {/* AI Advisory Summary Box */}
+      <div className="glass-card p-6 border-l-4 border-emerald-500 bg-slate-900/30">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+          <h4 className="text-sm font-bold text-white uppercase tracking-wider">AI Advisory: Analisis Simulasi Anggaran</h4>
+        </div>
+        <div className="space-y-3">
+          <h3 className="text-base font-bold text-emerald-400">{dynamicAIAdvisory.title}</h3>
+          <p className="text-xs text-slate-300 leading-relaxed">{dynamicAIAdvisory.description}</p>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-slate-950 border border-slate-850 text-[10px] text-emerald-405 font-semibold uppercase tracking-wide">
+            <span>Rekomendasi Aksi: {dynamicAIAdvisory.action}</span>
+          </div>
+        </div>
+      </div>
+
       {/* What-If Scenarios */}
       <div className="glass-card p-6">
         <div className="flex items-center gap-2 mb-4">
@@ -732,7 +834,7 @@ export default function PolicySimulationPage() {
               </tr>
             </thead>
             <tbody>
-              {policyData.whatifScenarios.map((s, i) => (
+              {dynamicWhatifScenarios.map((s, i) => (
                 <tr key={i} className="border-b border-slate-800 hover:bg-slate-800/50">
                   <td className="py-3 px-4 text-slate-200">{s.scenario}</td>
                   <td className="py-3 px-4 text-right text-slate-300">{s.affected}</td>

@@ -238,48 +238,6 @@ export default function ClusteringPage() {
     <div className="space-y-6 mt-12 lg:mt-0">
       <h1 className="text-2xl font-bold text-white">Clustering & Segmentation</h1>
 
-      {/* Cluster Profiles Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        {clusterData.profiles.map((cluster, i) => (
-          <div key={cluster.id} className="glass-card p-5 border border-slate-700/40 flex flex-col justify-between hover:border-slate-650 transition-colors">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: clusterColors[i % clusterColors.length] }} />
-                <h4 className="text-sm font-semibold text-white truncate">{cluster.name}</h4>
-              </div>
-              <div className="grid grid-cols-1 gap-2.5 text-xs border-t border-slate-800/60 pt-3">
-                <div>
-                  <span className="text-slate-400">Jumlah UMKM</span>
-                  <p className="text-white font-semibold text-sm mt-0.5">{cluster.n_umkm.toLocaleString()}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-2 mt-1">
-                  <div>
-                    <span className="text-slate-450 text-[10px]">Avg Score</span>
-                    <p className="text-white font-medium">{Number(cluster.avg_score).toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-450 text-[10px]">Infra Score</span>
-                    <p className="text-white font-medium">{Number(cluster.infra_score).toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-450 text-[10px]">Digital %</span>
-                    <p className="text-emerald-450 font-medium">{Number(cluster.digital_pct).toFixed(2)}%</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-450 text-[10px]">Kelangsungan</span>
-                    <p className="text-emerald-450 font-medium">{Number(cluster.survival_rate).toFixed(2)}%</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="mt-3 pt-2.5 border-t border-slate-800/40 text-[10px] text-slate-400 flex items-center justify-between">
-              <span>Income Indeks</span>
-              <span className="text-white font-medium">{Number(cluster.income).toFixed(2)} jt</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* Radar Chart & Retrain UI Split */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Radar Profiling Chart */}
@@ -390,7 +348,7 @@ export default function ClusteringPage() {
             <button
               onClick={handleRetrain}
               disabled={retraining}
-              className="w-full px-6 py-2.5 rounded-lg bg-accent text-white font-medium hover:bg-accent-600 transition-colors disabled:opacity-50 text-sm font-sans flex items-center justify-center gap-2"
+              className="w-full px-6 py-2.5 rounded-lg bg-accent text-white font-semibold hover:bg-accent-600 transition-colors disabled:opacity-50 text-sm font-sans flex items-center justify-center gap-2"
             >
               {retraining && (
                 <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
@@ -402,6 +360,48 @@ export default function ClusteringPage() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Cluster Profiles Cards (Analisis Hasil Klaster) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        {clusterData.profiles.map((cluster, i) => (
+          <div key={cluster.id} className="glass-card p-5 border border-slate-700/40 flex flex-col justify-between hover:border-slate-650 transition-colors">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: clusterColors[i % clusterColors.length] }} />
+                <h4 className="text-sm font-semibold text-white truncate">{cluster.name}</h4>
+              </div>
+              <div className="grid grid-cols-1 gap-2.5 text-xs border-t border-slate-800/60 pt-3">
+                <div>
+                  <span className="text-slate-400">Jumlah UMKM</span>
+                  <p className="text-white font-semibold text-sm mt-0.5">{cluster.n_umkm.toLocaleString()}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <div>
+                    <span className="text-slate-455 text-[10px]">Avg Score</span>
+                    <p className="text-white font-medium">{Number(cluster.avg_score).toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-455 text-[10px]">Infra Score</span>
+                    <p className="text-white font-medium">{Number(cluster.infra_score).toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-455 text-[10px]">Digital %</span>
+                    <p className="text-emerald-450 font-medium">{Number(cluster.digital_pct).toFixed(2)}%</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-455 text-[10px]">Kelangsungan</span>
+                    <p className="text-emerald-450 font-medium">{Number(cluster.survival_rate).toFixed(2)}%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 pt-2.5 border-t border-slate-800/40 text-[10px] text-slate-400 flex items-center justify-between">
+              <span>Income Indeks</span>
+              <span className="text-white font-medium">{Number(cluster.income).toFixed(2)} jt</span>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Government Priority Table */}

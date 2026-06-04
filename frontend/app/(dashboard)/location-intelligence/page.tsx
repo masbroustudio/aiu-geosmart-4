@@ -165,26 +165,52 @@ export default function LocationIntelligencePage() {
   const paginatedItems = sortedAndProcessed.slice(startIndex, startIndex + itemsPerPage);
 
   const runLocalFallbackSimulation = () => {
-    const infraDelta = Math.abs(infra - 50);
-    const bankDelta = Math.abs(bankDist - 50);
-    const internetDelta = Math.abs(internet - 50);
-    const maxDelta = Math.max(infraDelta, bankDelta, internetDelta);
+    const targetName = kabupaten !== 'Semua' ? kabupaten : 'Jawa Barat';
+    const sectorText = jenisUsaha !== 'Semua' ? ` Sektor ${jenisUsaha}` : '';
+    
+    // Sliders delta
+    const infraDelta = infra - 50;
+    const bankDelta = 50 - bankDist; // lower distance is better (so bankDist < 50 means distance is shorter, which is an improvement)
+    const internetDelta = internet - 50;
 
-    let bestScenario: WhatIfScenario;
-    if (maxDelta === infraDelta) {
-      bestScenario = whatifScenarios.find(s =>
-        s.scenario.toLowerCase().includes('infrastructure')
-      ) || whatifScenarios[0];
-    } else if (maxDelta === bankDelta) {
-      bestScenario = whatifScenarios.find(s =>
-        s.scenario.toLowerCase().includes('bank')
-      ) || whatifScenarios[1];
-    } else {
-      bestScenario = whatifScenarios.find(s =>
-        s.scenario.toLowerCase().includes('internet')
-      ) || whatifScenarios[2];
-    }
-    setSimResult(bestScenario);
+    // Base list we are simulating on
+    const targetList = filtered.length > 0 ? filtered : recommendData;
+    const avgBefore = targetList.reduce((sum, item) => sum + item.avg_score, 0) / targetList.length;
+
+    // Component increases based on real formulas
+    const infraInc = (infraDelta / 50) * 12.5;
+    const bankInc = (bankDelta / 50) * 8.0;
+    const internetInc = (internetDelta / 50) * 15.0;
+    
+    const totalInc = infraInc + bankInc + internetInc;
+    const avgAfter = Math.max(5.0, Math.min(99.5, avgBefore + totalInc));
+    const improvement = avgAfter - avgBefore;
+
+    // Estimate affected UMKMs using detail population
+    const affectedUMKMs = targetList.reduce((sum, item) => {
+      const detail = kecamatanDetailMap[item.kecamatan];
+      const pop = detail ? detail.population : 50000;
+      return sum + Math.round(pop / 300);
+    }, 0);
+
+    // Calculate how many kecamatans cross 75.0 (High Potential) score
+    const countAbove75Before = targetList.filter(item => item.avg_score >= 75).length;
+    const countAbove75After = targetList.filter(item => (item.avg_score + totalInc) >= 75).length;
+    const addedAbove75 = Math.max(0, countAbove75After - countAbove75Before);
+
+    // Construct custom scenario result
+    const dynamicScenario: WhatIfScenario = {
+      scenario: `Simulasi Kustom (${targetName}${sectorText}): Infra ${infraDelta >= 0 ? '+' : ''}${infraDelta}%, Jarak Bank ${bankDelta >= 0 ? 'Dekat +' : 'Jauh -'}${Math.abs(bankDelta)}%, Internet ${internetDelta >= 0 ? '+' : ''}${internetDelta}%`,
+      affected: affectedUMKMs || 150,
+      before: parseFloat(avgBefore.toFixed(2)),
+      after: parseFloat(avgAfter.toFixed(2)),
+      improvement: parseFloat(improvement.toFixed(2)),
+      max_improvement: parseFloat(Math.max(0, totalInc * 1.3).toFixed(2)),
+      pct_improved: totalInc > 0 ? 100.0 : 0.0,
+      above_70: addedAbove75
+    };
+
+    setSimResult(dynamicScenario);
   };
 
   const handleSimulate = async () => {
