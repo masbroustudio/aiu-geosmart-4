@@ -1,5 +1,6 @@
 import { HttpRequest } from '@azure/functions';
 import { mockDb } from '../db/mock.js';
+import { query, getPool } from '../db/pool.js';
 
 export interface AuditLogData {
   userId?: number;
@@ -15,16 +16,32 @@ export interface AuditLogData {
 
 export const logAudit = async (data: AuditLogData): Promise<void> => {
   try {
-    await mockDb.logAudit({
-      user_id: data.userId,
-      action: data.action,
-      endpoint: data.endpoint,
-      method: data.method,
-      status_code: data.statusCode,
-      response_time_ms: data.responseTimeMs,
-      ip_address: data.ipAddress,
-      user_agent: data.userAgent,
-    });
+    const isMock = getPool().mock;
+    if (isMock) {
+      await mockDb.logAudit({
+        user_id: data.userId,
+        action: data.action,
+        endpoint: data.endpoint,
+        method: data.method,
+        status_code: data.statusCode,
+        response_time_ms: data.responseTimeMs,
+        ip_address: data.ipAddress,
+        user_agent: data.userAgent,
+      });
+    } else {
+      await query(
+        `INSERT INTO audit_logs (user_id, action, endpoint, response_status, ip_address, user_agent) 
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          data.userId || null,
+          data.action,
+          data.endpoint,
+          data.statusCode,
+          data.ipAddress || null,
+          data.userAgent || null,
+        ]
+      );
+    }
   } catch (error) {
     console.error('Failed to log audit:', error);
   }
@@ -71,5 +88,19 @@ export const getRecentAuditLogs = async (
   userId?: number,
   limit: number = 100
 ): Promise<any[]> => {
-  return mockDb.getAuditLogs(limit);
+  const isMock = getPool().mock;
+  if (isMock) {
+    return mockDb.getAuditLogs(limit);
+  }
+  
+  const res = userId
+    ? await query(
+        'SELECT * FROM audit_logs WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2',
+        [userId, limit]
+      )
+    : await query(
+        'SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT $1',
+        [limit]
+      );
+  return res.rows;
 };

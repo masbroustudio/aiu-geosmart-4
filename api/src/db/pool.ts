@@ -7,22 +7,26 @@ let pool: any = null;
 
 export const getPool = () => {
   if (!pool) {
-    if (process.env.DB_TYPE === 'postgres' || process.env.DATABASE_URL) {
+    const dbType = process.env.DB_TYPE || '';
+    const dbHost = process.env.DB_HOST || process.env.PGHOST;
+    const hasPostgres = dbType.toLowerCase() === 'postgres' || !!process.env.DATABASE_URL || !!dbHost;
+
+    if (hasPostgres) {
       console.log('Initializing real PostgreSQL Connection Pool');
       const connectionString = process.env.DATABASE_URL;
       
       const config: any = connectionString 
         ? { connectionString }
         : {
-            host: process.env.PGHOST || 'localhost',
-            user: process.env.PGUSER || 'postgres',
-            password: process.env.PGPASSWORD || 'postgres',
-            database: process.env.PGDATABASE || 'geoumkm',
-            port: parseInt(process.env.PGPORT || '5432'),
+            host: process.env.DB_HOST || process.env.PGHOST || 'localhost',
+            user: process.env.DB_USER || process.env.PGUSER || 'postgres',
+            password: process.env.DB_PASSWORD || process.env.PGPASSWORD || 'postgres',
+            database: process.env.DB_NAME || process.env.PGDATABASE || 'geoumkm',
+            port: parseInt(process.env.DB_PORT || process.env.PGPORT || '5432'),
           };
       
       // Azure Database for PostgreSQL usually requires SSL
-      if (process.env.PGSSLMODE !== 'disable') {
+      if (process.env.DB_SSL === 'true' || process.env.PGSSLMODE !== 'disable') {
         config.ssl = { rejectUnauthorized: false };
       }
       

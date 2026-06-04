@@ -185,8 +185,7 @@ export async function register(email: string, password: string, fullName: string
       body: JSON.stringify({ email, password, full_name: fullName }),
     });
     const json = await res.json();
-    if (json.success && json.data?.token) {
-      setAuthToken(json.data.token);
+    if (json.success && json.data) {
       return json.data;
     }
     return null;

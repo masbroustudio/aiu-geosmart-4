@@ -77,7 +77,7 @@ jobs:
         working-directory: ./frontend
         run: pnpm build
         env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.AZURE_API_URL || 'https://witty-island-0fdf65f00.7.azurestaticapps.net/api' }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.AZURE_API_URL || 'https://witty-island-0fdf65f00.7.azurestaticapps.net' }}
 
       - name: Deploy to Azure Static Web App
         uses: Azure/static-web-apps-deploy@v1
@@ -140,7 +140,7 @@ Check Azure Portal:
 
 **Frontend (.env.production):**
 ```
-NEXT_PUBLIC_API_URL=https://witty-island-0fdf65f00.7.azurestaticapps.net/api
+NEXT_PUBLIC_API_URL=https://witty-island-0fdf65f00.7.azurestaticapps.net
 ```
 
 **GitHub Secrets Needed:**

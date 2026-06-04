@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MapPin, Loader2 } from "lucide-react";
-import { login } from "@/lib/api";
+import { login, logout } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,6 +13,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  // Clear any existing session token when visiting login page
+  useEffect(() => {
+    logout();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

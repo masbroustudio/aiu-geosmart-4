@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -15,8 +15,10 @@ import {
   Settings,
   Menu,
   X,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { logout } from "@/lib/api";
 
 const navItems = [
   { label: "Overview", href: "/overview", icon: LayoutDashboard },
@@ -84,6 +86,14 @@ export default function Sidebar() {
 }
 
 function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate: () => void }) {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    onNavigate();
+    router.push("/login");
+  };
+
   return (
     <>
       {/* Logo */}
@@ -127,16 +137,23 @@ function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate
       </nav>
 
       {/* User */}
-      <div className="p-4 border-t border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+      <div className="p-4 border-t border-slate-800 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
             <span className="text-xs font-bold text-white">U</span>
           </div>
-          <div>
-            <p className="text-sm font-medium text-white">User</p>
-            <p className="text-xs text-slate-500">Administrator</p>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-white truncate">User</p>
+            <p className="text-xs text-slate-500 truncate">Administrator</p>
           </div>
         </div>
+        <button
+          onClick={handleLogout}
+          className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+          title="Keluar"
+        >
+          <LogOut className="w-5 h-5" />
+        </button>
       </div>
     </>
   );

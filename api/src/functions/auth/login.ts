@@ -66,14 +66,7 @@ async function handler(
     }
  
     // Get user by email
-    let user = await getUserByEmail(body.email);
-    
-    // Auto-create user on login in mock mode to survive container restarts
-    if (!user && getPool().mock) {
-      context.log(`Auto-creating user ${body.email} in mock database to survive container recycle.`);
-      const hashedPassword = await bcryptjs.hash(body.password, 10);
-      user = await createUser(body.email, hashedPassword, body.email.split('@')[0], 'viewer');
-    }
+    const user = await getUserByEmail(body.email);
 
     if (!user) {
       await logAudit({
