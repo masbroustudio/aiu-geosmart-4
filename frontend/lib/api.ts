@@ -106,23 +106,23 @@ export async function fetchCredit() {
     const bands = data.credit_score_bands.map((b: any, idx: number) => {
       const colors = ['#10B981', '#34D399', '#6EE7B7', '#FCD34D', '#F59E0B', '#EF4444', '#991B1B'];
       return {
-        rating: b.rating || '',
-        scoreRange: b.score_range || '',
-        count: Number(b.count || 0),
-        pctPortfolio: b.pct_of_portfolio || '0%',
-        defaultRate: b.actual_default_rate || '0%',
-        meanPD: b.mean_predicted_pd || '0%',
+        rating: b.rating || b.Rating || '',
+        scoreRange: b.score_range || b['Score Range'] || '',
+        count: Number(b.count !== undefined ? b.count : (b.Count !== undefined ? b.Count : 0)),
+        pctPortfolio: b.pct_of_portfolio || b['Pct of Portfolio'] || '0%',
+        defaultRate: b.actual_default_rate || b['Actual Default Rate'] || '0%',
+        meanPD: b.mean_predicted_pd || b['Mean Predicted PD'] || '0%',
         color: colors[idx % colors.length]
       };
     });
 
     const pdBuckets = data.pd_regulatory_buckets.map((b: any) => ({
-      bucket: b['PD Bucket'] || b.bucket || '',
-      count: Number(b['Count'] || b.count || 0),
-      pctPortfolio: b['Pct of Portfolio'] || b.pctPortfolio || '0%',
-      defaultRate: b['Actual Default Rate'] || b.defaultRate || '0%',
-      avgPD: b['Avg Predicted PD'] || b.avgPD || '0%',
-      expectedLoss: b['Expected Loss (EL)'] || b.expectedLoss || '0%',
+      bucket: b.bucket || b['PD Bucket'] || '',
+      count: Number(b.count !== undefined ? b.count : (b['Count'] !== undefined ? b['Count'] : 0)),
+      pctPortfolio: b.pct_portfolio || b['Pct of Portfolio'] || b.pctPortfolio || '0%',
+      defaultRate: b.default_rate || b['Actual Default Rate'] || b.defaultRate || '0%',
+      avgPD: b.avg_pd || b['Avg Predicted PD'] || b.avgPD || '0%',
+      expectedLoss: b.expected_loss || b['Expected Loss (EL)'] || b.expectedLoss || '0%',
     }));
 
     return { bands, pdBuckets };

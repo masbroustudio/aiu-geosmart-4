@@ -1,5 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { getKnowledgeBase } from "../data/loader.js";
+import { getKnowledgeBase, getGovPriorityKecamatan } from "../data/loader.js";
 import { ChatMessage, ChatResponse, KnowledgeBaseEntry } from "../shared/types.js";
 import { requireAuth } from "../middleware/verifyToken.js";
 import { logAudit, extractRequestInfo } from "../services/audit.js";
@@ -201,7 +201,90 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
     }
 
     const lowerMessage = message.toLowerCase();
-    
+
+    const priorityKecList = getGovPriorityKecamatan();
+    const matchedKec = priorityKecList.find(k => lowerMessage.includes(k.kecamatan.toLowerCase()));
+
+    if (matchedKec) {
+      await logAudit({
+        userId,
+        action: "chat_message",
+        endpoint: requestInfo.endpoint,
+        method: requestInfo.method,
+        statusCode: 200,
+        requestBody: JSON.stringify({ message, persona }),
+        responseTimeMs: Date.now() - startTime,
+        ipAddress: requestInfo.ipAddress,
+        userAgent: requestInfo.userAgent,
+      });
+
+      return {
+        status: 200,
+        jsonBody: {
+          success: true,
+          data: {
+            response: `**Analisis Kewilayahan Kecamatan ${matchedKec.kecamatan} (${matchedKec.kabupaten}):**\n\nBerdasarkan data dasar GeoUMKM Smart v4.0:\n- **Peringkat Prioritas Pemerintah**: #${matchedKec.rank} dari seluruh wilayah prioritas di Jawa Barat.\n- **Rata-rata Skor Kelaikan/Potensi**: **${matchedKec.avg_skor}** (Skala 1-100).\n- **Faktor Pembatas Utama (Top Limiting Factor)**: \`${matchedKec.top_limiting_factor}\` (Ini merupakan hambatan terbesar bagi perkembangan UMKM di daerah ini).\n- **Rekomendasi Intervensi Kebijakan**: *${matchedKec.recommendation}*\n\n*Saran Tindakan:* Gunakan halaman **Location Intelligence** atau **Policy Simulation** untuk merancang alokasi anggaran intervensi guna mengatasi faktor pembatas \`${matchedKec.top_limiting_factor}\` dan meningkatkan skor potensi wilayah ini secara signifikan.`,
+            intent: "kecamatan_detail",
+            sources: ["government_priority_kecamatan"]
+          }
+        }
+      };
+    }
+
+    if (lowerMessage.includes("kecamatan") || lowerMessage.includes("data dasar") || lowerMessage.includes("wilayah") || lowerMessage.includes("daerah")) {
+      const topKec = priorityKecList.slice(0, 5).map(k => `- **Kec. ${k.kecamatan}** (${k.kabupaten}): Skor ${k.avg_skor}, Faktor Pembatas: \`${k.top_limiting_factor}\``).join("\n");
+      
+      await logAudit({
+        userId,
+        action: "chat_message",
+        endpoint: requestInfo.endpoint,
+        method: requestInfo.method,
+        statusCode: 200,
+        requestBody: JSON.stringify({ message, persona }),
+        responseTimeMs: Date.now() - startTime,
+        ipAddress: requestInfo.ipAddress,
+        userAgent: requestInfo.userAgent,
+      });
+
+      return {
+        status: 200,
+        jsonBody: {
+          success: true,
+          data: {
+            response: `**Data Dasar Kecamatan & Analisis Kewilayahan GeoUMKM Smart:**\n\nSistem memantau data dasar kewilayahan di seluruh Jawa Barat dengan mengukur aspek infrastruktur, akses digital, kepadatan kompetitor, dan akses layanan keuangan.\n\nBerikut adalah **Top 5 Kecamatan Prioritas Tinggi** berdasarkan skor potensi terendah yang membutuhkan intervensi mendesak:\n${topKec}\n\n*Anda dapat menanyakan analisis spesifik untuk salah satu kecamatan di atas (misal: "Bagaimana profil Kecamatan Sagaranten?") untuk melihat detail faktor pembatas dan rekomendasi intervensinya.*`,
+            intent: "kecamatan_summary",
+            sources: ["government_priority_kecamatan"]
+          }
+        }
+      };
+    }
+
+    if (lowerMessage.includes("geo umkm smart") || lowerMessage.includes("aplikasi ini") || lowerMessage.includes("tentang") || lowerMessage.includes("tujuan") || lowerMessage.includes("notebook") || lowerMessage.includes("analisis spasial")) {
+      await logAudit({
+        userId,
+        action: "chat_message",
+        endpoint: requestInfo.endpoint,
+        method: requestInfo.method,
+        statusCode: 200,
+        requestBody: JSON.stringify({ message, persona }),
+        responseTimeMs: Date.now() - startTime,
+        ipAddress: requestInfo.ipAddress,
+        userAgent: requestInfo.userAgent,
+      });
+
+      return {
+        status: 200,
+        jsonBody: {
+          success: true,
+          data: {
+            response: `**Tentang Aplikasi GeoUMKM Smart v4.0 (Berdasarkan Notebook & Analisis Spasial):**\n\nGeoUMKM Smart adalah platform berbasis AI & Sistem Informasi Geografis (GIS) untuk memetakan potensi bisnis, menilai kelaikan kredit UMKM, dan menyimulasikan kebijakan ekonomi daerah di Jawa Barat.\n\n**Metodologi & Temuan Kunci ML (seperti di Notebook):**\n1. **K-Means & DBSCAN Clustering**: Membagi 10.000 data UMKM menjadi 5 kluster utama. Kluster risiko tinggi (**High-Risk Underserved**) tersebar di Sukabumi selatan dan Garut selatan dengan skor infrastruktur rendah. Kluster mapan (**Urban Digital Leaders**) terkonsentrasi di wilayah Jabodetabek/Bandung Raya.\n2. **XGBoost Credit Scoring**: Model memprediksi tingkat gagal bayar (Probability of Default - PD) berdasarkan 11 fitur spasial dan bisnis. Fitur dominan (SHAP) adalah **business maturity** (umur usaha) dan **digital presence**.\n3. **Policy Simulation**: Menghubungkan alokasi anggaran infrastruktur jalan, perluasan jaringan internet, dan pendirian ATM/Bank terdekat untuk menurunkan default rate portofolio secara terukur.\n\n*Silakan tanyakan hal khusus seperti: "Bagaimana kluster Urban Digital Leaders?" atau "Apa saja fitur utama dalam XGBoost Credit Scoring?"*`,
+            intent: "about_app",
+            sources: ["notebooks_insights", "ml_clustering_report"]
+          }
+        }
+      };
+    }
+
     // Intercept menu/page queries
     if (lowerMessage.includes("halaman") || lowerMessage.includes("fitur") || lowerMessage.includes("menu") || lowerMessage.includes("dasbor") || lowerMessage.includes("dashboard")) {
       await logAudit({

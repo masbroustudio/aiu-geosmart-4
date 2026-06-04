@@ -21,8 +21,9 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
     const totalUmkm = umkmData.length;
 
     // Average skor_potensi
-    const avgScore =
-      umkmData.reduce((sum, item) => sum + item.skor_potensi, 0) / totalUmkm;
+    const avgScore = totalUmkm > 0
+      ? umkmData.reduce((sum, item) => sum + item.skor_potensi, 0) / totalUmkm
+      : 0;
 
     // High-risk count: unique kecamatan in clusters 3 and 4
     const highRiskKecamatan = new Set(
@@ -34,7 +35,7 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
 
     // Survival rate
     const survivedCount = umkmData.filter((item) => item.is_survived_3yr === 1).length;
-    const survivalRate = (survivedCount / totalUmkm) * 100;
+    const survivalRate = totalUmkm > 0 ? (survivedCount / totalUmkm) * 100 : 0;
 
     // Score distribution histogram
     const buckets = [

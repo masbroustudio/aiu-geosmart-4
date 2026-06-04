@@ -21,11 +21,39 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
 
     if (band) {
       creditBands = creditBands.filter(
-        (item) => item.Rating.toLowerCase().includes(band.toLowerCase())
+        (item) => item.Rating && item.Rating.toLowerCase().includes(band.toLowerCase())
       );
     }
 
-    const results = creditBands.slice(0, limit);
+    const results = creditBands.slice(0, limit).map((b) => ({
+      Rating: b.Rating,
+      "Score Range": b["Score Range"],
+      Count: Number(b.Count || 0),
+      "Pct of Portfolio": b["Pct of Portfolio"],
+      "Actual Default Rate": b["Actual Default Rate"],
+      "Mean Predicted PD": b["Mean Predicted PD"],
+      rating: b.Rating,
+      score_range: b["Score Range"],
+      count: Number(b.Count || 0),
+      pct_of_portfolio: b["Pct of Portfolio"],
+      actual_default_rate: b["Actual Default Rate"],
+      mean_predicted_pd: b["Mean Predicted PD"],
+    }));
+
+    const pdBucketsMapped = pdBuckets.map((b) => ({
+      "PD Bucket": b["PD Bucket"],
+      Count: Number(b.Count || 0),
+      "Pct of Portfolio": b["Pct of Portfolio"],
+      "Actual Default Rate": b["Actual Default Rate"],
+      "Avg Predicted PD": b["Avg Predicted PD"],
+      "Expected Loss (EL)": b["Expected Loss (EL)"],
+      bucket: b["PD Bucket"],
+      count: Number(b.Count || 0),
+      pct_portfolio: b["Pct of Portfolio"],
+      default_rate: b["Actual Default Rate"],
+      avg_pd: b["Avg Predicted PD"],
+      expected_loss: b["Expected Loss (EL)"],
+    }));
 
     await logAudit({
       userId,
@@ -44,11 +72,11 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
         success: true,
         data: {
           credit_score_bands: results,
-          pd_regulatory_buckets: pdBuckets,
+          pd_regulatory_buckets: pdBucketsMapped,
         },
         summary: {
           total_bands: creditBands.length,
-          total_pd_buckets: pdBuckets.length,
+          total_pd_buckets: pdBucketsMapped.length,
         },
       },
     };
