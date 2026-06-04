@@ -30,8 +30,8 @@ export const logAudit = async (data: AuditLogData): Promise<void> => {
       });
     } else {
       await query(
-        `INSERT INTO audit_logs (user_id, action, endpoint, response_status, ip_address, user_agent) 
-         VALUES ($1, $2, $3, $4, $5, $6)`,
+        `INSERT INTO audit_logs (user_id, action, endpoint, response_status, ip_address, user_agent, request_body) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [
           data.userId || null,
           data.action,
@@ -39,6 +39,7 @@ export const logAudit = async (data: AuditLogData): Promise<void> => {
           data.statusCode,
           data.ipAddress || null,
           data.userAgent || null,
+          data.requestBody || null,
         ]
       );
     }

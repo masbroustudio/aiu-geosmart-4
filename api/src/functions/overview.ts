@@ -126,6 +126,7 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
       endpoint: requestInfo.endpoint,
       method: requestInfo.method,
       statusCode,
+      requestBody: error.message || String(error),
       responseTimeMs: Date.now() - startTime,
       ipAddress: requestInfo.ipAddress,
       userAgent: requestInfo.userAgent,
