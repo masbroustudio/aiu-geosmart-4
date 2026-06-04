@@ -1,16 +1,30 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MapPin, Search, Sliders, AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
+import { 
+  MapPin, 
+  Search, 
+  Sliders, 
+  AlertTriangle, 
+  X, 
+  ChevronLeft, 
+  ChevronRight, 
+  ArrowUpRight, 
+  Users, 
+  TrendingUp, 
+  DollarSign, 
+  Shield, 
+  Building2, 
+  Wifi, 
+  Info 
+} from 'lucide-react';
 import { recommendData as staticRecommendData, policyData as staticPolicyData, kecamatanDetailData } from '@/lib/static-data';
 import { fetchRecommendations, fetchPolicy, simulateWhatIf } from '@/lib/api';
 import DownloadCSVButton from '@/components/ui/DownloadCSVButton';
 import ComparisonRadarChart from '@/components/dashboard/ComparisonRadarChart';
 import { useToast } from '@/lib/toast-context';
 import { kecamatanDetailMap } from '@/lib/kecamatan-detail-data';
-
-const jenisUsahaOptions = ['Semua', 'Makanan', 'Fashion', 'Kerajinan', 'Jasa', 'Pertanian'];
-const kabupatenOptions = ['Semua', 'Kota Bekasi', 'Kota Depok', 'Kota Bandung', 'Kab. Bogor', 'Kota Cimahi'];
 
 type WhatIfScenario = typeof staticPolicyData.whatifScenarios[number];
 
@@ -36,6 +50,16 @@ export default function LocationIntelligencePage() {
   const [wFinance, setWFinance] = useState(20);
   const [wCompetition, setWCompetition] = useState(15);
   const [wSurvival, setWSurvival] = useState(20);
+
+  // New Search, Pagination, and Popup States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedKecamatan, setSelectedKecamatan] = useState<any | null>(null);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [jenisUsaha, kabupaten, searchQuery, useMcda, sortByMarketGap]);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,6 +88,12 @@ export default function LocationIntelligencePage() {
   const filtered = recommendData.filter((item) => {
     if (jenisUsaha !== 'Semua' && item.jenis_usaha !== jenisUsaha) return false;
     if (kabupaten !== 'Semua' && item.kabupaten !== kabupaten) return false;
+    if (searchQuery.trim() !== '') {
+      const q = searchQuery.toLowerCase();
+      const matchKec = item.kecamatan.toLowerCase().includes(q);
+      const matchKab = item.kabupaten.toLowerCase().includes(q);
+      if (!matchKec && !matchKab) return false;
+    }
     return true;
   });
 
@@ -126,6 +156,13 @@ export default function LocationIntelligencePage() {
   const gapScores = sortedAndProcessed.map(i => i.gapScore);
   const sortedGapScores = [...gapScores].sort((a, b) => b - a);
   const gapThreshold = sortedGapScores[Math.floor(sortedGapScores.length * 0.25)] || 3000;
+
+  // Pagination parameters
+  const itemsPerPage = 9;
+  const totalPages = Math.ceil(sortedAndProcessed.length / itemsPerPage);
+  const validCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
+  const startIndex = (validCurrentPage - 1) * itemsPerPage;
+  const paginatedItems = sortedAndProcessed.slice(startIndex, startIndex + itemsPerPage);
 
   const runLocalFallbackSimulation = () => {
     const infraDelta = Math.abs(infra - 50);
@@ -191,42 +228,57 @@ export default function LocationIntelligencePage() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Filters */}
         <div className="glass-card p-6 xl:col-span-1 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Search className="w-5 h-5 text-accent" />
-                <h3 className="text-lg font-semibold text-white font-serif">Filter Wilayah</h3>
-              </div>
+          <div className="space-y-5">
+            <div className="flex items-center gap-2">
+              <Search className="w-5 h-5 text-accent" />
+              <h3 className="text-lg font-semibold text-white font-serif">Filter Wilayah</h3>
             </div>
+
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-slate-400 mb-1 block">Jenis Usaha</label>
-                <select
-                  value={jenisUsaha}
-                  onChange={(e) => setJenisUsaha(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg bg-slate-800/80 border border-slate-700 text-white text-sm focus:outline-none focus:border-accent"
-                >
-                  {jenisUsahaOptions.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2 font-sans">Kategori Usaha</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {['Semua', 'Makanan', 'Fashion', 'Kerajinan', 'Jasa', 'Pertanian'].map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setJenisUsaha(opt)}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all duration-200 ${
+                        jenisUsaha === opt
+                          ? 'bg-accent border-accent text-white font-semibold shadow-md shadow-accent/20'
+                          : 'bg-slate-900 border-slate-800/80 text-slate-400 hover:text-white hover:border-slate-700'
+                      }`}
+                    >
+                      {opt}
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
+
               <div>
-                <label className="text-sm text-slate-400 mb-1 block">Kabupaten/Kota</label>
-                <select
-                  value={kabupaten}
-                  onChange={(e) => setKabupaten(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg bg-slate-800/80 border border-slate-700 text-white text-sm focus:outline-none focus:border-accent"
-                >
-                  {kabupatenOptions.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2 font-sans">Kabupaten / Kota</span>
+                <div className="flex flex-wrap gap-1.5 max-h-[160px] overflow-y-auto pr-1 scrollbar-thin">
+                  {['Semua', ...Array.from(new Set(recommendData.map(item => item.kabupaten)))].map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setKabupaten(opt)}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all duration-200 ${
+                        kabupaten === opt
+                          ? 'bg-accent border-accent text-white font-semibold shadow-md shadow-accent/20'
+                          : 'bg-slate-900 border-slate-800/80 text-slate-400 hover:text-white hover:border-slate-700'
+                      }`}
+                    >
+                      {opt}
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
             </div>
           </div>
-          <div className="pt-6 border-t border-slate-800/60 mt-6 flex items-center justify-between">
-            <span className="text-xs text-slate-400">{sortedAndProcessed.length} wilayah ditemukan</span>
+
+          <div className="pt-5 border-t border-slate-800/60 mt-6 flex items-center justify-between">
+            <span className="text-xs text-slate-450">{sortedAndProcessed.length} wilayah ditemukan</span>
             <DownloadCSVButton data={sortedAndProcessed as unknown as Record<string, unknown>[]} filename="location-recommendations" />
           </div>
         </div>
@@ -337,71 +389,149 @@ export default function LocationIntelligencePage() {
         </div>
       </div>
 
-      {/* Results */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {sortedAndProcessed.length === 0 ? (
-          <div className="col-span-full glass-card p-8 text-center">
-            <p className="text-slate-400">No recommendations found for the selected filters.</p>
+      {/* Results Search and Pagination */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Cari kecamatan..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-accent"
+            />
           </div>
-        ) : (
-          sortedAndProcessed.map((item, i) => (
-            <div key={i} className="glass-card p-5 border border-slate-700/50 hover:border-accent/40 transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-accent" />
-                    <span className="text-sm font-semibold text-white">{item.kecamatan}</span>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <span className="text-lg font-bold text-accent">
-                      {useMcda ? item.customScore.toFixed(2) : item.avg_score.toFixed(2)}
-                    </span>
-                    <span className="text-[9px] text-slate-400">
-                      {useMcda ? 'Skor Kustom' : 'Skor Potensi'}
-                    </span>
-                  </div>
-                </div>
-                <p className="text-[11px] text-slate-400 mb-2 font-medium">{item.kabupaten} | <span className="text-slate-300">{item.jenis_usaha}</span></p>
-                <p className="text-xs text-slate-400/90 leading-relaxed mb-4">{item.explanation}</p>
-              </div>
+          <div className="text-[11px] text-slate-500 font-sans">
+            Menampilkan {sortedAndProcessed.length > 0 ? startIndex + 1 : 0}-{Math.min(startIndex + itemsPerPage, sortedAndProcessed.length)} dari {sortedAndProcessed.length} wilayah
+          </div>
+        </div>
 
-              <div className="border-t border-slate-850 pt-3 mt-auto space-y-2">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-400">Rasio Populasi/Kompetitor</span>
-                  <span className="text-slate-200 font-medium">
-                    {item.populasi.toLocaleString()} jiwa / {item.competitorCount} UMKM
-                  </span>
-                </div>
-                
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {item.gapScore >= gapThreshold && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/20">
-                      🔥 MARKET GAP TINGGI ({item.gapScore.toFixed(1)})
-                    </span>
-                  )}
-                  {sortByMarketGap && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/20">
-                      Market Gap Rank #{i + 1}
-                    </span>
-                  )}
-                  {useMcda && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-                      MCDA Rank #{i + 1}
-                    </span>
-                  )}
-                </div>
-
-                {useMcda && (
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[9px] text-slate-400 pt-2 border-t border-slate-800/40">
-                    <div>Infra Score: <span className="text-slate-200 font-medium">{item.infraScore.toFixed(1)}</span></div>
-                    <div>Digital Score: <span className="text-slate-200 font-medium">{item.internetScore.toFixed(1)}</span></div>
-                    <div>Finance Score: <span className="text-slate-200 font-medium">{item.financeScore.toFixed(1)}</span></div>
-                    <div>Survival Rate: <span className="text-slate-200 font-medium">{item.survivalScore.toFixed(1)}%</span></div>
-                  </div>
-                )}
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {paginatedItems.length === 0 ? (
+            <div className="col-span-full glass-card p-8 text-center">
+              <p className="text-slate-400">Tidak ada rekomendasi wilayah yang cocok dengan filter atau pencarian Anda.</p>
             </div>
-          ))
+          ) : (
+            paginatedItems.map((item, i) => (
+              <div 
+                key={i} 
+                onClick={() => {
+                  const detail = kecamatanDetailMap[item.kecamatan];
+                  setSelectedKecamatan(detail || {
+                    name: item.kecamatan,
+                    kabupaten: item.kabupaten,
+                    lat: item.lat || -6.2,
+                    lng: item.lng || 106.8,
+                    population: item.populasi,
+                    avg_skor_potensi: item.avg_score,
+                    avg_omset: 50,
+                    survival_rate: item.survivalScore || 70,
+                    infrastructure_score: item.infraScore || 50,
+                    digital_readiness: item.internetScore || 50,
+                    financial_access: item.financeScore || 50,
+                    risk_flood: 20,
+                    risk_earthquake: 20,
+                    competition_level: item.competitorCount || 10,
+                    umkm_list: [],
+                    recommended_business: [item.jenis_usaha],
+                    score_breakdown: {
+                      infrastructure: item.infraScore || 50,
+                      digital: item.internetScore || 50,
+                      financial: item.financeScore || 50,
+                      risk: 50,
+                      location: 50
+                    }
+                  });
+                }}
+                className="glass-card p-5 border border-slate-700/50 hover:border-accent cursor-pointer transform hover:-translate-y-1 hover:shadow-lg hover:shadow-accent/5 transition-all duration-300 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-accent" />
+                      <span className="text-sm font-semibold text-white">{item.kecamatan}</span>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="text-lg font-bold text-accent">
+                        {useMcda ? item.customScore.toFixed(2) : item.avg_score.toFixed(2)}
+                      </span>
+                      <span className="text-[9px] text-slate-400">
+                        {useMcda ? 'Skor Kustom' : 'Skor Potensi'}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mb-2 font-medium">{item.kabupaten} | <span className="text-slate-300">{item.jenis_usaha}</span></p>
+                  <p className="text-xs text-slate-400/90 leading-relaxed mb-4">{item.explanation}</p>
+                </div>
+
+                <div className="border-t border-slate-850 pt-3 mt-auto space-y-2">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400">Rasio Populasi/Kompetitor</span>
+                    <span className="text-slate-200 font-medium">
+                      {item.populasi.toLocaleString()} jiwa / {item.competitorCount} UMKM
+                    </span>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {item.gapScore >= gapThreshold && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                        🔥 MARKET GAP TINGGI ({item.gapScore.toFixed(1)})
+                      </span>
+                    )}
+                    {sortByMarketGap && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/20">
+                        Market Gap Rank #{startIndex + i + 1}
+                      </span>
+                    )}
+                    {useMcda && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                        MCDA Rank #{startIndex + i + 1}
+                      </span>
+                    )}
+                  </div>
+
+                  {useMcda && (
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[9px] text-slate-400 pt-2 border-t border-slate-800/40">
+                      <div>Infra Score: <span className="text-slate-200 font-medium">{item.infraScore.toFixed(1)}</span></div>
+                      <div>Digital Score: <span className="text-slate-200 font-medium">{item.internetScore.toFixed(1)}</span></div>
+                      <div>Finance Score: <span className="text-slate-200 font-medium">{item.financeScore.toFixed(1)}</span></div>
+                      <div>Survival Rate: <span className="text-slate-200 font-medium">{item.survivalScore.toFixed(1)}%</span></div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Pagination Navigation */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-3 pt-4">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentPage(prev => Math.max(1, prev - 1));
+              }}
+              disabled={validCurrentPage === 1}
+              className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-40 disabled:hover:text-slate-400 transition-colors flex items-center justify-center"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs text-slate-400 font-sans">
+              Halaman <span className="text-white font-semibold">{validCurrentPage}</span> dari <span className="text-white font-semibold">{totalPages}</span>
+            </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentPage(prev => Math.min(totalPages, prev + 1));
+              }}
+              disabled={validCurrentPage === totalPages}
+              className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-40 disabled:hover:text-slate-400 transition-colors flex items-center justify-center"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         )}
       </div>
 
@@ -598,6 +728,109 @@ export default function LocationIntelligencePage() {
           );
         })()}
       </div>
+
+      {/* Kecamatan Detail Popup Modal */}
+      {selectedKecamatan && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm transition-all"
+          onClick={() => setSelectedKecamatan(null)}
+        >
+          <div 
+            className="relative w-full max-w-2xl bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-900 bg-slate-950/60 flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-accent" />
+                  <h2 className="text-lg font-bold text-white font-serif">{selectedKecamatan.name}</h2>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">{selectedKecamatan.kabupaten}</p>
+              </div>
+              <button
+                onClick={() => setSelectedKecamatan(null)}
+                className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-6 scrollbar-thin">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-500">
+                <span>Koordinat: {selectedKecamatan.lat?.toFixed(3)}, {selectedKecamatan.lng?.toFixed(3)}</span>
+                <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-850">Detail Terintegrasi</span>
+              </div>
+
+              {/* KPIs Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-850 space-y-1">
+                  <Users className="w-4 h-4 text-blue-400" />
+                  <span className="text-[10px] text-slate-550 uppercase tracking-wider block font-bold font-sans">Populasi</span>
+                  <p className="text-sm font-bold text-white">{selectedKecamatan.population?.toLocaleString()} jiwa</p>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-850 space-y-1">
+                  <TrendingUp className="w-4 h-4 text-emerald-400" />
+                  <span className="text-[10px] text-slate-550 uppercase tracking-wider block font-bold font-sans">Avg Skor Potensi</span>
+                  <p className="text-sm font-bold text-white">{selectedKecamatan.avg_skor_potensi?.toFixed(1)} / 100</p>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-850 space-y-1">
+                  <DollarSign className="w-4 h-4 text-amber-400" />
+                  <span className="text-[10px] text-slate-550 uppercase tracking-wider block font-bold font-sans">Rata-rata Omset</span>
+                  <p className="text-sm font-bold text-white">Rp {selectedKecamatan.avg_omset} Jt/bln</p>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-850 space-y-1">
+                  <Shield className="w-4 h-4 text-purple-400" />
+                  <span className="text-[10px] text-slate-550 uppercase tracking-wider block font-bold font-sans">Survival Rate</span>
+                  <p className="text-sm font-bold text-white">{selectedKecamatan.survival_rate}%</p>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-850 space-y-1">
+                  <Building2 className="w-4 h-4 text-pink-400" />
+                  <span className="text-[10px] text-slate-550 uppercase tracking-wider block font-bold font-sans">Infrastruktur</span>
+                  <p className="text-sm font-bold text-white">{selectedKecamatan.infrastructure_score}</p>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-850 space-y-1">
+                  <Wifi className="w-4 h-4 text-cyan-400" />
+                  <span className="text-[10px] text-slate-550 uppercase tracking-wider block font-bold font-sans">Digital Readiness</span>
+                  <p className="text-sm font-bold text-white">{selectedKecamatan.digital_readiness}</p>
+                </div>
+              </div>
+
+              {/* Recommended Businesses */}
+              {selectedKecamatan.recommended_business && selectedKecamatan.recommended_business.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold text-slate-300">Rekomendasi Sektor Usaha:</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedKecamatan.recommended_business.map((biz: string, idx: number) => (
+                      <span key={idx} className="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+                        {biz}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-900 bg-slate-950/60 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <button
+                onClick={() => setSelectedKecamatan(null)}
+                className="w-full sm:w-auto px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 text-xs transition-colors"
+              >
+                Tutup
+              </button>
+              <Link
+                href={`/kecamatan?name=${encodeURIComponent(selectedKecamatan.name)}&kabupaten=${encodeURIComponent(selectedKecamatan.kabupaten)}`}
+                className="w-full sm:w-auto px-4 py-2 rounded-lg bg-accent hover:bg-accent-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+              >
+                Buka Analisis Detail Selengkapnya
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

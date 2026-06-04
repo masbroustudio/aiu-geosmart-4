@@ -72,24 +72,24 @@ function getEnhancedResponse(message: string, persona: Persona): string {
   const lower = message.toLowerCase();
 
   // Intercept menu/page queries
-  if (lower.includes("halaman") || lower.includes("fitur") || lower.includes("menu") || lower.includes("dasbor") || lower.includes("dashboard")) {
+  if (lower === "daftar halaman" || lower === "daftar menu" || lower === "panduan dasbor" || lower === "panduan dashboard") {
     return `**Panduan Fitur & Halaman Dasbor GeoUMKM Smart v4.0:**\n\nPlatform ini menyediakan 8 modul utama di Dasbor yang dapat diakses melalui Sidebar:\n1. **Overview**: Menampilkan ringkasan metrik eksekutif, peta interaktif sebaran UMKM, status cluster, dan top kabupaten berdasarkan skor potensi.\n2. **Credit Scoring**: Menyajikan sebaran rating kredit (AAA hingga CCC), analisis Probability of Default (PD), dan faktor penjelas model SHAP (XGBoost).\n3. **Portfolio Analytics**: Memantau kinerja portofolio pembiayaan UMKM (Total disalurkan, Yield, NPL) beserta simulasi uji stres portofolio.\n4. **Location Intelligence**: Menyaring rekomendasi lokasi potensial berdasarkan jenis usaha dan menyajikan simulator kebijakan serta radar perbandingan antar wilayah.\n5. **Clustering**: Menganalisis pengelompokan UMKM ke dalam 5 profil segmentasi berdasarkan kematangan digital dan infrastruktur daerah.\n6. **Policy Simulation**: Menyimulasikan dampak alokasi anggaran daerah terhadap peningkatan skor potensi UMKM dan tingkat kelangsungan hidup.\n7. **Reports**: Mengunduh laporan PDF eksekutif komprehensif dan mengekspor dataset UMKM terklasifikasi dalam format CSV.\n8. **Settings**: Mengatur preferensi profil pengguna, tema gelap/terang, bahasa, alerting notifikasi, regenerasi API Keys developer, serta pembersihan data sesi database.`;
   }
 
-  if (lower.includes("setting") || lower.includes("pengaturan")) {
+  if (lower === "halaman pengaturan" || lower === "menu setting" || lower === "halaman setting") {
     return `**Menu Settings (Pengaturan) v4.0:**\n\nHalaman Pengaturan mencakup:\n- **Profil Akun**: Menampilkan nama, email, dan peran otentikasi (viewer/administrator) Anda yang didekode langsung dari token JWT. Anda juga dapat memperbarui nama atau password.\n- **Tampilan & Preferensi**: Mengubah tema sistem (Gelap/Terang) secara real-time yang terhubung ke context, pilihan bahasa (Indonesia/Inggris), serta tombol sakelar notifikasi laporan mingguan dan log audit.\n- **Integrasi & API**: Menyediakan base URL endpoint REST API SWA dan API Key aktif yang dapat disalin atau dibuat ulang untuk integrasi eksternal.\n- **Sistem & Database**: Memberikan status database, wilayah cloud Azure East Asia, versi aplikasi, serta opsi pembersihan data sesi.`;
   }
 
-  if (lower.includes("report") || lower.includes("laporan")) {
+  if (lower === "halaman laporan" || lower === "menu report" || lower === "halaman report") {
     return `**Menu Reports (Laporan) v4.0:**\n\nHalaman Laporan memungkinkan Anda untuk:\n- **Download PDF Executive Summary**: Menghasilkan berkas laporan PDF berkualitas tinggi secara langsung dari browser menggunakan jsPDF, lengkap dengan ringkasan eksekutif, tabel cluster, dan analisis kredit.\n- **Export Data CSV**: Mengekspor data terkompresi dari dataset UMKM (termasuk koordinat, skor, dan kelompok cluster) ke berkas CSV.`;
   }
 
-  if (lower.includes("portofolio") || lower.includes("portfolio")) {
+  if (lower === "ringkasan portofolio" || lower === "kinerja portofolio" || lower === "halaman portfolio") {
     return `**Menu Portfolio Analytics v4.0:**\n\nHalaman Portfolio memantau kesehatan pembiayaan:\n- **Metrik Utama**: Total eksposur kredit (Rp 585.0 Miliar), Yield Rata-rata (11.8%), NPL Ratio (4.2%), dan Expected Loss (Rp 175.5 Miliar).\n- **Analisis Stres Portofolio**: Menyediakan simulasi stress test (Skenario Ringan, Sedang, Berat) untuk melihat perkiraan lonjakan rasio NPL jika kondisi makroekonomi memburuk.`;
   }
 
   // Credit/score queries
-  if (lower.includes('kredit') || lower.includes('credit') || lower.includes('skor') || lower.includes('score')) {
+  if (lower.includes('kredit') || lower.includes('credit') || lower.includes('skor') || lower.includes('score') || lower.includes('kelayakan') || lower.includes('kelaikan')) {
     if (persona === 'bank') {
       return `**Distribusi Credit Band Portfolio:**\n\n- **AAA** (skor 750-850): 976 UMKM (9.8%) - Default rate 3.9%\n- **AA** (skor 700-749): 1,534 UMKM (15.3%) - Default rate 4.2%\n- **A** (skor 650-699): 1,691 UMKM (16.9%) - Default rate 7.5%\n- **BBB** (skor 600-649): 1,549 UMKM (15.5%) - Default rate 12.7%\n- **BB** (skor 550-599): 1,265 UMKM (12.7%) - Default rate 30.2%\n- **B** (skor 450-549): 1,975 UMKM (19.8%) - Default rate 73.5%\n- **CCC/CC/C** (skor 300-449): 1,010 UMKM (10.1%) - Default rate 93.3%\n\n**Rata-rata PD portfolio:** 43.20%\n**Expected Loss:** Rp 175.5 Miliar\n\n[Sumber: Credit Risk Model]`;
     }
@@ -140,8 +140,35 @@ function getEnhancedResponse(message: string, persona: Persona): string {
     return `**Analisis Adopsi Digital UMKM:**\n\n- **Klaster Digital Tertinggi**: Urban Digital Leaders (74.1% digital adoption)\n- **Klaster Digital Terendah**: High-Risk Underserved (31.4% digital adoption)\n- **Rekomendasi Intervensi**: Program literasi digital di area rural (Kab. Pangandaran (28.92 avg score) & Kab. Sukabumi (30.44 avg score)).\n\n[Sumber: Digital Readiness Index]`;
   }
 
-  // Recommendation queries
-  if (lower.includes('rekomendasi') || lower.includes('recommend')) {
+  // Recommendation/Location queries
+  if (lower.includes('lokasi') || lower.includes('location') || lower.includes('kecamatan') || lower.includes('rekomendasi') || lower.includes('recommend') || lower.includes('tempat')) {
+    // Detect sector synonym
+    let detectedSector = "";
+    if (lower.includes("textile") || lower.includes("tekstil") || lower.includes("baju") || lower.includes("pakaian") || lower.includes("fashion") || lower.includes("kain") || lower.includes("butik") || lower.includes("garment") || lower.includes("konveksi")) {
+      detectedSector = "Fashion";
+    } else if (lower.includes("makanan") || lower.includes("kuliner") || lower.includes("minuman") || lower.includes("kopi") || lower.includes("resto") || lower.includes("kafe") || lower.includes("makan")) {
+      detectedSector = "Makanan";
+    } else if (lower.includes("kerajinan") || lower.includes("kriya") || lower.includes("anyaman") || lower.includes("souvenir")) {
+      detectedSector = "Kerajinan";
+    } else if (lower.includes("jasa") || lower.includes("laundry") || lower.includes("salon") || lower.includes("bengkel") || lower.includes("logistik")) {
+      detectedSector = "Jasa";
+    } else if (lower.includes("pertanian") || lower.includes("tani") || lower.includes("sawah") || lower.includes("kebun") || lower.includes("ternak")) {
+      detectedSector = "Pertanian";
+    }
+
+    if (detectedSector) {
+      if (detectedSector === 'Fashion') {
+        return `**Rekomendasi Lokasi untuk Usaha Fashion (termasuk Tekstil/Pakaian):**\n\nBerdasarkan data spasial GeoUMKM, lokasi terbaik untuk membuka usaha fashion adalah:\n- **Kecamatan Pondok Gede** (Kota Bekasi) - Skor Potensi: **94.85**. Survival rate: 83.0%.\n- **Kecamatan Astana Anyar** (Kota Bandung) - Skor Potensi: **90.62**. Survival rate: 85.0%.\n- **Kecamatan Bekasi Selatan** (Kota Bekasi) - Skor Potensi: **92.00**. Survival rate: 80.0%.\n\n[Sumber: Location Intelligence Model]`;
+      }
+      if (detectedSector === 'Makanan') {
+        return `**Rekomendasi Lokasi untuk Usaha Makanan / Kuliner:**\n\nLokasi teratas untuk membuka usaha kuliner adalah:\n- **Kecamatan Pondok Gede** (Kota Bekasi) - Skor Potensi: **94.85**. Survival rate: 83.0%.\n- **Kecamatan Bekasi Selatan** (Kota Bekasi) - Skor Potensi: **92.00**. Survival rate: 80.0%.\n- **Kecamatan Cilodong** (Kota Depok) - Skor Potensi: **90.30**. Survival rate: 81.0%.\n\n[Sumber: Location Intelligence Model]`;
+      }
+      if (detectedSector === 'Pertanian') {
+        return `**Rekomendasi Lokasi untuk Sektor Pertanian:**\n\nLokasi teratas dengan kesesuaian lahan pertanian/agribisnis adalah:\n- **Kecamatan Bojonggede** (Kab. Bogor) - Skor Potensi: **81.47**\n- **Kecamatan Pangalengan** (Kab. Bandung) - Skor Potensi: **72.50**\n- **Kecamatan Cimenyan** (Kab. Bandung) - Skor Potensi: **68.53**\n\n[Sumber: Location Intelligence Model]`;
+      }
+      return `**Rekomendasi Lokasi Sektor ${detectedSector}:**\n\nWilayah dengan skor kelaikan tertinggi untuk industri **${detectedSector}**:\n- **Kecamatan Pondok Gede** (Kota Bekasi) - Skor Potensi: **94.85**\n- **Kecamatan Bekasi Selatan** (Kota Bekasi) - Skor Potensi: **92.00**\n\n[Sumber: Location Intelligence Model]`;
+    }
+
     if (persona === 'bank') {
       return `**Rekomendasi untuk Bank:**\n- **Ekspansi KUR**: Fokus pada kecamatan dengan skor potensi >70 dan penetrasi KUR saat ini masih rendah.\n- **Penyaringan Risiko**: Gunakan threshold credit score 650 (Rating A ke atas) untuk persetujuan kredit otomatis.\n- **Mitigasi NPL**: Terapkan syarat jaminan tambahan untuk UMKM di cluster High-Risk Underserved.`;
     }
@@ -167,11 +194,12 @@ function getEnhancedResponse(message: string, persona: Persona): string {
   }
 
   // Sector queries
-  if (lower.includes('makanan') || lower.includes('fashion') || lower.includes('kerajinan') || lower.includes('jasa') || lower.includes('pertanian')) {
-    const sector = lower.includes('makanan') ? 'Makanan' : lower.includes('fashion') ? 'Fashion' : lower.includes('kerajinan') ? 'Kerajinan' : lower.includes('jasa') ? 'Jasa' : 'Pertanian';
+  if (lower.includes('makanan') || lower.includes('fashion') || lower.includes('kerajinan') || lower.includes('jasa') || lower.includes('pertanian') || lower.includes('textile') || lower.includes('tekstil') || lower.includes('baju') || lower.includes('pakaian') || lower.includes('garment') || lower.includes('konveksi')) {
+    const isFashion = lower.includes('fashion') || lower.includes('textile') || lower.includes('tekstil') || lower.includes('baju') || lower.includes('pakaian') || lower.includes('garment') || lower.includes('konveksi');
+    const sector = lower.includes('makanan') ? 'Makanan' : isFashion ? 'Fashion' : lower.includes('kerajinan') ? 'Kerajinan' : lower.includes('jasa') ? 'Jasa' : 'Pertanian';
     const sectorData: Record<string, { count: string; pct: string; desc: string }> = {
       'Makanan': { count: '3,971', pct: '39.71%', desc: 'Sektor terbesar, persaingan ketat di urban area, profit margin stabil.' },
-      'Fashion': { count: '2,026', pct: '20.26%', desc: 'Sektor fashion berpusat di Bandung, sensitif terhadap tren digital.' },
+      'Fashion': { count: '2,026', pct: '20.26%', desc: 'Sektor fashion (termasuk industri garmen/tekstil/baju) berpusat di Bandung, sensitif terhadap tren digital.' },
       'Kerajinan': { count: '1,515', pct: '15.15%', desc: 'Adopsi digital penting untuk ekspansi pasar nasional/internasional.' },
       'Jasa': { count: '1,495', pct: '14.95%', desc: 'Tumbuh subur di Depok & Bekasi seiring urbanisasi.' },
       'Pertanian': { count: '993', pct: '9.93%', desc: 'Sektor terkecil, potensi pembiayaan KUR tinggi, terpusat di Bogor & Sukabumi.' },
@@ -182,7 +210,7 @@ function getEnhancedResponse(message: string, persona: Persona): string {
 
   // Location queries
   if (lower.includes('lokasi') || lower.includes('location') || lower.includes('kecamatan')) {
-    return `**Analisis Wilayah Tingkat Kabupaten:**\n- **Skor Tertinggi**: Kota Depok (82.08) & Kota Bandung (81.61)\n- **Skor Terendah**: Kab. Sukabumi (30.44) & Kab. Pangandaran (28.92)\n\n*Catatan*: Pembangunan jaringan internet dan akses jalan utama berkorelasi kuat (>0.72) dengan kenaikan skor potensi di kabupaten-kabupaten terbawah.`;
+    return `**Analisis Wilayah Tingkat Kabupaten:**\n- **Skor Tertinggi**: Kota Depok (82.08) & Kota Bandung (81.61)\n- **Skor Terendah**: Kab. Sukabumi (30.44) & Kab. Pangandaran (28.92)\n\n*Catatan*: Pembangunan jaringan internet dan akses jalan utama berkorelasi kuat (>0.72) confirm dengan kenaikan skor potensi di kabupaten-kabupaten terbawah.`;
   }
 
   // Specific Kabupaten queries

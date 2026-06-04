@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   LogOut,
+  BrainCircuit,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout } from "@/lib/api";
@@ -28,6 +29,7 @@ const navItems = [
   { label: "Clustering", href: "/clustering", icon: Layers },
   { label: "Policy Simulation", href: "/policy-simulation", icon: TrendingUp },
   { label: "Reports", href: "/reports", icon: FileBarChart },
+  { label: "Asisten Analisis Data AI", href: "/ai-analyst", icon: BrainCircuit },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
