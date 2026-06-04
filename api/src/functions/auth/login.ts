@@ -133,6 +133,7 @@ async function handler(
       endpoint: requestInfo.endpoint,
       method: requestInfo.method,
       statusCode: 200,
+      requestBody: `Signed with secret hint: ${jwtSecret.substring(0, 3)}...${jwtSecret.slice(-3)} (len: ${jwtSecret.length})`,
       ipAddress: requestInfo.ipAddress,
       userAgent: requestInfo.userAgent,
       responseTimeMs: Date.now() - startTime,
