@@ -1,0 +1,8 @@
+Rating,Score Range,Count,Pct of Portfolio,Actual Default Rate,Mean Predicted PD
+AAA (Excellent),750-850,976,9.8%,3.9%,13.2%
+AA (Very Good),700-749,1534,15.3%,4.2%,23.1%
+A (Good),650-699,1691,16.9%,7.5%,31.8%
+BBB (Adequate),600-649,1549,15.5%,12.7%,40.8%
+BB (Below Average),550-599,1265,12.7%,30.2%,49.8%
+B (Weak),450-549,1975,19.8%,73.5%,63.4%
+CCC/CC/C (Very Weak/Default),300-449,1010,10.1%,93.3%,79.5%

@@ -1,0 +1,167 @@
+{
+  "personas": {
+    "bank": {
+      "name": "Bank / Financial Institution",
+      "description": "Credit officers evaluating UMKM loan applications and KUR eligibility",
+      "primary_queries": [
+        "Credit worthiness assessment for specific kecamatan",
+        "KUR eligibility evaluation",
+        "Portfolio risk analysis by area",
+        "Default probability estimation"
+      ],
+      "retrieval_strategy": {
+        "primary_documents": [
+          "location_profiles",
+          "model_insights"
+        ],
+        "secondary_documents": [
+          "cluster_summaries"
+        ],
+        "key_fields": [
+          "umkm_statistics.survival_rate",
+          "umkm_statistics.financial_access_score",
+          "risk_levels.risk_composite",
+          "infrastructure.penetrasi_kur_pct",
+          "infrastructure.jarak_ke_bank_terdekat"
+        ],
+        "scoring_criteria": {
+          "credit_score_band": "Map survival_rate to AAA-D rating scale",
+          "probability_of_default": "1 - survival_rate as PD estimate",
+          "survival_probability": "3-year survival based on cluster characteristics",
+          "risk_factors": [
+            "risk_composite",
+            "risiko_banjir",
+            "risiko_gempa",
+            "competition_density"
+          ]
+        }
+      },
+      "response_template": {
+        "format": "structured_assessment",
+        "sections": [
+          "credit_summary",
+          "risk_factors",
+          "recommendation",
+          "supporting_data"
+        ]
+      }
+    },
+    "government": {
+      "name": "Government / Policy Maker",
+      "description": "Officials planning interventions, budget allocation, and infrastructure development",
+      "primary_queries": [
+        "Priority areas for intervention",
+        "Infrastructure development needs",
+        "Budget allocation recommendations",
+        "Policy impact projections"
+      ],
+      "retrieval_strategy": {
+        "primary_documents": [
+          "cluster_summaries",
+          "model_insights"
+        ],
+        "secondary_documents": [
+          "location_profiles"
+        ],
+        "key_fields": [
+          "government_priority_rank",
+          "swot.weaknesses",
+          "recommended_actions",
+          "key_characteristics.avg_infrastructure_score",
+          "policy_simulation_results"
+        ],
+        "scoring_criteria": {
+          "priority_clusters": "Ranked by priority_score (low infra + low income + high risk)",
+          "intervention_recommendations": "Based on SWOT weaknesses and recommended_actions",
+          "budget_allocation": "Proportional to priority_score and n_umkm affected",
+          "impact_projection": "From policy simulation what-if results"
+        }
+      },
+      "response_template": {
+        "format": "policy_brief",
+        "sections": [
+          "situation_analysis",
+          "priority_areas",
+          "recommendations",
+          "budget_estimate",
+          "expected_impact"
+        ]
+      }
+    },
+    "investor": {
+      "name": "Investor / Private Sector",
+      "description": "Investors seeking UMKM market opportunities, growth sectors, and partnership potential",
+      "primary_queries": [
+        "Best investment locations by sector",
+        "Market gaps and opportunities",
+        "Growth potential analysis",
+        "Risk-adjusted return estimation"
+      ],
+      "retrieval_strategy": {
+        "primary_documents": [
+          "cluster_summaries",
+          "location_profiles"
+        ],
+        "secondary_documents": [
+          "model_insights"
+        ],
+        "key_fields": [
+          "investment_rank",
+          "umkm_statistics.avg_omset_juta",
+          "umkm_statistics.avg_skor_potensi",
+          "recommended_business_types",
+          "cluster.cluster_name"
+        ],
+        "scoring_criteria": {
+          "investment_opportunities": "Ranked by investment_score (growth + low competition + infra + survival + revenue)",
+          "market_gaps": "Areas with high potential but low UMKM density",
+          "growth_potential": "Based on skor_potensi trend and infrastructure trajectory",
+          "risk_return_profile": "Survival rate vs revenue potential ratio"
+        }
+      },
+      "response_template": {
+        "format": "investment_memo",
+        "sections": [
+          "opportunity_summary",
+          "market_analysis",
+          "risk_assessment",
+          "financial_projections",
+          "recommendation"
+        ]
+      }
+    }
+  },
+  "routing_rules": {
+    "description": "Rules for routing queries to the appropriate persona schema",
+    "keyword_mapping": {
+      "bank": [
+        "kredit",
+        "KUR",
+        "pinjaman",
+        "default",
+        "risiko kredit",
+        "layak",
+        "agunan",
+        "bunga"
+      ],
+      "government": [
+        "intervensi",
+        "infrastruktur",
+        "prioritas",
+        "anggaran",
+        "kebijakan",
+        "pembangunan"
+      ],
+      "investor": [
+        "investasi",
+        "peluang",
+        "pasar",
+        "ROI",
+        "pertumbuhan",
+        "sektor",
+        "modal"
+      ]
+    },
+    "fallback": "If persona cannot be determined, use investor schema (broadest coverage)"
+  }
+}

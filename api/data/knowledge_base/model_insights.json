@@ -1,0 +1,200 @@
+{
+  "id": "model_insights",
+  "type": "model_insight",
+  "location_scoring_model": {
+    "description": "Predicts location potential score (skor_potensi) for UMKM locations",
+    "model_type": "XGBRegressor",
+    "top_features": [
+      {
+        "feature": "infra_x_income",
+        "importance": 0.4919
+      },
+      {
+        "feature": "akses_internet_pct",
+        "importance": 0.1549
+      },
+      {
+        "feature": "location_advantage",
+        "importance": 0.1105
+      },
+      {
+        "feature": "income_per_kapita",
+        "importance": 0.0876
+      },
+      {
+        "feature": "skor_infrastruktur",
+        "importance": 0.034
+      },
+      {
+        "feature": "digital_readiness_index",
+        "importance": 0.0326
+      },
+      {
+        "feature": "penetrasi_kur_pct",
+        "importance": 0.0246
+      },
+      {
+        "feature": "jumlah_kompetitor_radius_3km",
+        "importance": 0.0151
+      },
+      {
+        "feature": "has_digital_presence",
+        "importance": 0.009
+      },
+      {
+        "feature": "competition_density_ratio",
+        "importance": 0.0065
+      }
+    ],
+    "key_findings": [
+      "Infrastructure score is the strongest predictor of location potential",
+      "Internet access and income per capita are critical secondary factors",
+      "Risk composite negatively impacts location scores",
+      "Urban areas generally score higher due to better infrastructure"
+    ]
+  },
+  "credit_risk_model": {
+    "description": "Predicts 3-year survival probability for UMKM businesses",
+    "model_type": "LGBMClassifier",
+    "top_features": [
+      {
+        "feature": "omset_bulanan",
+        "importance": 858.0
+      },
+      {
+        "feature": "omset_per_karyawan",
+        "importance": 808.0
+      },
+      {
+        "feature": "tahun_berdiri",
+        "importance": 362.0
+      },
+      {
+        "feature": "digital_readiness_index",
+        "importance": 300.0
+      },
+      {
+        "feature": "penetrasi_kur_pct",
+        "importance": 285.0
+      },
+      {
+        "feature": "jarak_ke_jalan_utama",
+        "importance": 271.0
+      },
+      {
+        "feature": "risk_composite",
+        "importance": 257.0
+      },
+      {
+        "feature": "market_gap_score",
+        "importance": 235.0
+      },
+      {
+        "feature": "jumlah_karyawan",
+        "importance": 229.0
+      },
+      {
+        "feature": "skor_infrastruktur",
+        "importance": 229.0
+      }
+    ],
+    "credit_score_bands": [
+      {
+        "rating": "AAA (Excellent)",
+        "score_range": "750-850",
+        "count": 976,
+        "pct_of_portfolio": "9.8%",
+        "actual_default_rate": "3.9%",
+        "mean_predicted_pd": "13.2%"
+      },
+      {
+        "rating": "AA (Very Good)",
+        "score_range": "700-749",
+        "count": 1534,
+        "pct_of_portfolio": "15.3%",
+        "actual_default_rate": "4.2%",
+        "mean_predicted_pd": "23.1%"
+      },
+      {
+        "rating": "A (Good)",
+        "score_range": "650-699",
+        "count": 1691,
+        "pct_of_portfolio": "16.9%",
+        "actual_default_rate": "7.5%",
+        "mean_predicted_pd": "31.8%"
+      },
+      {
+        "rating": "BBB (Adequate)",
+        "score_range": "600-649",
+        "count": 1549,
+        "pct_of_portfolio": "15.5%",
+        "actual_default_rate": "12.7%",
+        "mean_predicted_pd": "40.8%"
+      },
+      {
+        "rating": "BB (Below Average)",
+        "score_range": "550-599",
+        "count": 1265,
+        "pct_of_portfolio": "12.7%",
+        "actual_default_rate": "30.2%",
+        "mean_predicted_pd": "49.8%"
+      },
+      {
+        "rating": "B (Weak)",
+        "score_range": "450-549",
+        "count": 1975,
+        "pct_of_portfolio": "19.8%",
+        "actual_default_rate": "73.5%",
+        "mean_predicted_pd": "63.4%"
+      },
+      {
+        "rating": "CCC/CC/C (Very Weak/Default)",
+        "score_range": "300-449",
+        "count": 1010,
+        "pct_of_portfolio": "10.1%",
+        "actual_default_rate": "93.3%",
+        "mean_predicted_pd": "79.5%"
+      }
+    ],
+    "key_findings": [
+      "Business maturity is the top predictor of survival",
+      "Digital presence significantly improves survival probability",
+      "Financial access score correlates with lower default risk",
+      "Competition density has non-linear effect on survival"
+    ]
+  },
+  "policy_simulation_results": {
+    "description": "What-if simulation results for policy interventions",
+    "policies_tested": [
+      {
+        "policy": "KUR Expansion (+20%)",
+        "target_group": "Low-KUR areas (3,041 UMKMs)",
+        "avg_score_improvement": 0.78,
+        "pct_improved": 73.1,
+        "new_above_70": 20,
+        "additional_survivors": 23
+      },
+      {
+        "policy": "Infrastructure +30",
+        "target_group": "Low-infra areas (2,507 UMKMs)",
+        "avg_score_improvement": 24.1,
+        "pct_improved": 100.0,
+        "new_above_70": 335,
+        "additional_survivors": 88
+      },
+      {
+        "policy": "Digital Training (50%)",
+        "target_group": "Non-digital UMKMs (2,439 trained)",
+        "avg_score_improvement": 11.37,
+        "pct_improved": 100.0,
+        "new_above_70": 390,
+        "additional_survivors": 58
+      }
+    ],
+    "key_findings": [
+      "KUR expansion shows immediate measurable impact on potential scores",
+      "Infrastructure investment has the highest long-term ROI",
+      "Combined interventions show synergistic effects"
+    ]
+  }
+}

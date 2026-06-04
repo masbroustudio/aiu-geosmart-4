@@ -31,8 +31,17 @@ export function toBoolean(value: unknown): boolean {
 }
 
 export function resolveDataPath(relativePath: string): string {
-  // From compiled dist/ directory, we need to go up to api/, then to ml/data/
-  return path.resolve(__dirname, "../../..", "ml/data", relativePath);
+  const possiblePaths = [
+    path.resolve(__dirname, "../../data", relativePath),
+    path.resolve(__dirname, "../../..", "ml/data", relativePath),
+    path.resolve(process.cwd(), "data", relativePath),
+    path.resolve(process.cwd(), "api/data", relativePath),
+  ];
+
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) return p;
+  }
+  return possiblePaths[0]; // fallback
 }
 
 export function filterByField<T>(data: T[], field: keyof T, value: string | undefined): T[] {

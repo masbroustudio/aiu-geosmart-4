@@ -85,7 +85,7 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
       },
     };
   } catch (error) {
-    const isAuthError = error instanceof Error && error.message === 'Unauthorized';
+    const isAuthError = error instanceof Error && error.message.startsWith('Unauthorized');
     const statusCode = isAuthError ? 401 : 500;
 
     context.error('Error in location heatmap chart handler:', error);

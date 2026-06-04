@@ -1,0 +1,100 @@
+{
+  "knowledge_base_version": "1.0",
+  "created_by": "Notebook 07 - LLM & RIG Preparation",
+  "description": "Structured knowledge base for GeoUMKM Smart RAG/RIG system",
+  "documents": {
+    "location_profiles.json": {
+      "type": "location_profile",
+      "count": 595,
+      "description": "Per-kecamatan structured profiles with demographics, infrastructure, risk, and UMKM statistics",
+      "primary_personas": [
+        "bank",
+        "investor",
+        "government"
+      ],
+      "key_fields": [
+        "name",
+        "kabupaten",
+        "coordinates",
+        "demographics",
+        "infrastructure",
+        "risk_levels",
+        "umkm_statistics",
+        "cluster",
+        "recommended_business_types"
+      ]
+    },
+    "cluster_summaries.json": {
+      "type": "cluster_summary",
+      "count": 5,
+      "description": "Cluster-level narrative summaries with SWOT analysis and recommended actions",
+      "primary_personas": [
+        "government",
+        "investor"
+      ],
+      "key_fields": [
+        "cluster_name",
+        "description",
+        "key_characteristics",
+        "swot",
+        "recommended_actions"
+      ]
+    },
+    "model_insights.json": {
+      "type": "model_insight",
+      "count": 1,
+      "description": "Model feature importance, credit score bands, and policy simulation results",
+      "primary_personas": [
+        "bank",
+        "government"
+      ],
+      "key_fields": [
+        "location_scoring_model",
+        "credit_risk_model",
+        "policy_simulation_results"
+      ]
+    },
+    "retrieval_schemas.json": {
+      "type": "retrieval_schema",
+      "count": 3,
+      "description": "Persona-specific retrieval strategies defining what to retrieve and how to format responses",
+      "primary_personas": [
+        "bank",
+        "government",
+        "investor"
+      ],
+      "key_fields": [
+        "personas",
+        "routing_rules"
+      ]
+    },
+    "example_queries.json": {
+      "type": "example_queries",
+      "count": 15,
+      "description": "5 example queries per persona with expected responses for testing and few-shot prompting",
+      "primary_personas": [
+        "bank",
+        "government",
+        "investor"
+      ],
+      "key_fields": [
+        "query",
+        "intent",
+        "retrieved_docs",
+        "expected_response"
+      ]
+    }
+  },
+  "embedding_config": {
+    "production_model": "text-embedding-ada-002",
+    "dimensions": 1536,
+    "local_simulation": "TF-IDF (scikit-learn)",
+    "local_dimensions": 5000
+  },
+  "deployment_notes": {
+    "vector_store": "Azure AI Search",
+    "llm": "Azure OpenAI GPT-4",
+    "cache": "Redis for frequent queries",
+    "monitoring": "Azure Application Insights"
+  }
+}

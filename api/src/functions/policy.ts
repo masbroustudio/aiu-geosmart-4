@@ -63,7 +63,7 @@ async function getPolicyHandler(request: HttpRequest, context: InvocationContext
       },
     };
   } catch (error) {
-    const isAuthError = error instanceof Error && error.message === 'Unauthorized';
+    const isAuthError = error instanceof Error && error.message.startsWith('Unauthorized');
     const statusCode = isAuthError ? 401 : 500;
     context.error("Error in GET policy handler:", error);
 
@@ -182,7 +182,7 @@ async function simulatePolicyHandler(request: HttpRequest, context: InvocationCo
     };
 
   } catch (error: any) {
-    const isAuthError = error instanceof Error && error.message === 'Unauthorized';
+    const isAuthError = error instanceof Error && error.message.startsWith('Unauthorized');
     const statusCode = isAuthError ? 401 : 500;
     context.error("Error in simulatePolicyHandler:", error);
 

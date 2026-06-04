@@ -22,7 +22,17 @@ import { toNumber, toBoolean } from "../shared/utils.js";
 
 // Base path for data files
 function getDataPath(relativePath: string): string {
-  return path.resolve(__dirname, "../../..", "ml/data", relativePath);
+  const possiblePaths = [
+    path.resolve(__dirname, "../../data", relativePath),
+    path.resolve(__dirname, "../../..", "ml/data", relativePath),
+    path.resolve(process.cwd(), "data", relativePath),
+    path.resolve(process.cwd(), "api/data", relativePath),
+  ];
+
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) return p;
+  }
+  return possiblePaths[0]; // fallback
 }
 
 function loadCSV<T>(filename: string): T[] {

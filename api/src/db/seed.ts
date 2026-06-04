@@ -5,10 +5,13 @@ import { query, getPool } from "./pool.js";
 
 // Resolves data file paths relative to this file
 function getDataPath(relativePath: string): string {
-  // Try multiple paths to find ml/data folder
+  // Try multiple paths to find ml/data or api/data folder
   const possiblePaths = [
+    path.resolve(__dirname, "../../data", relativePath),
     path.resolve(__dirname, "../../..", "ml/data", relativePath),
     path.resolve(__dirname, "../../../..", "ml/data", relativePath),
+    path.resolve(process.cwd(), "data", relativePath),
+    path.resolve(process.cwd(), "api/data", relativePath),
     path.resolve(process.cwd(), "ml/data", relativePath),
     path.resolve(process.cwd(), "../ml/data", relativePath),
   ];

@@ -58,11 +58,13 @@ Versi **v4.0** membawa platform ini ke tingkat kesiapan produksi (*production-re
 * Peta spasial sebaran kecamatan dengan mode visualisasi ganda (**Pin Standard** dan **Heatmap Density**) serta legenda interaktif yang berfungsi sebagai filter koordinat secara real-time pada peta.
 * Integrasi *What-If Simulator* Location Intelligence langsung ke backend endpoint `/api/whatif`.
 
-### 11. 📄 Perbaikan Ekspor PDF Laporan
-* Menggunakan metode impor modular ESM untuk JS-AutoTable (`jspdf-autotable`) guna menjamin kompatibilitas penuh dan menghindari kegagalan ekspor PDF di Next.js.
-
+### 12. 🛠️ Perbaikan Path File & Penanganan Error Autentikasi pada Azure SWA
+* **Lokalisasi Data SWA**: Memindahkan dan menyinkronkan seluruh dataset (`.csv` dan `.json`) ke direktori `api/data/` agar dikemas dan dideploy secara utuh oleh Azure Static Web Apps (karena folder `ml/data/` di luar root API tidak dikemas saat deploy).
+* **Path Resolution Fallback**: Memperbarui utility path resolution agar mendahulukan pencarian file di `api/data` lokal sebelum melakukan *fallback* ke `ml/data` untuk menjaga kompatibilitas eksekusi lokal (`func start`) dan Azure serverless.
+* **Koreksi Status HTTP Autentikasi**: Memperbaiki pengecekan status autentikasi di catch block seluruh handler API (25 file handler) dari pengecekan kaku `error.message === 'Unauthorized'` menjadi `error.message.startsWith('Unauthorized')` agar jika token JWT tidak valid/kedaluwarsa, API mengembalikan kode status kustom `401 Unauthorized` dengan benar, alih-alih mengalami crash dengan status `500 Internal Server Error`.
 
 ---
+
 
 ## 📋 Deskripsi Proyek
 

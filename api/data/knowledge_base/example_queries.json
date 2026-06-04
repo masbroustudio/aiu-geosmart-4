@@ -1,0 +1,139 @@
+{
+  "bank_examples": [
+    {
+      "query": "Apakah UMKM di Kecamatan Andir layak untuk KUR?",
+      "intent": "credit_assessment",
+      "retrieved_docs": [
+        "location_profile",
+        "cluster_summary"
+      ],
+      "expected_response": "Berdasarkan analisis data untuk Kecamatan Andir, Kota Bandung: Tingkat survival rate UMKM di area ini perlu dievaluasi bersama skor infrastruktur dan penetrasi KUR existing. Rekomendasi: evaluasi individual dengan mempertimbangkan profil risiko area dan historical performance cluster."
+    },
+    {
+      "query": "Berapa tingkat default rate untuk UMKM di cluster Urban Digital Leaders?",
+      "intent": "portfolio_risk",
+      "retrieved_docs": [
+        "cluster_summary",
+        "model_insights"
+      ],
+      "expected_response": "Cluster Urban Digital Leaders memiliki survival rate tertinggi (~72%). Estimasi default rate: ~28% dalam 3 tahun. Faktor pendukung: infrastruktur kuat, adopsi digital tinggi, dan akses finansial baik."
+    },
+    {
+      "query": "Area mana yang memiliki risiko kredit tertinggi?",
+      "intent": "risk_mapping",
+      "retrieved_docs": [
+        "location_profiles",
+        "cluster_summaries"
+      ],
+      "expected_response": "Area dengan risiko kredit tertinggi berada di cluster High-Risk Underserved dengan karakteristik: infrastruktur rendah, income per kapita rendah, dan risiko bencana tinggi. Kecamatan-kecamatan di cluster ini memerlukan jaminan tambahan atau skema KUR khusus."
+    },
+    {
+      "query": "Bagaimana profil risiko portofolio KUR berdasarkan score band?",
+      "intent": "portfolio_analysis",
+      "retrieved_docs": [
+        "model_insights"
+      ],
+      "expected_response": "Distribusi portofolio berdasarkan credit score band menunjukkan konsentrasi terbesar pada rating menengah. Rekomendasi: diversifikasi exposure dengan meningkatkan porsi di area high-potential yang underserved."
+    },
+    {
+      "query": "Faktor apa saja yang mempengaruhi kemampuan bayar UMKM?",
+      "intent": "risk_factors",
+      "retrieved_docs": [
+        "model_insights"
+      ],
+      "expected_response": "Top faktor yang mempengaruhi survival/kemampuan bayar UMKM: 1) Business maturity (usia usaha), 2) Digital presence, 3) Financial access score, 4) Infrastructure quality, 5) Competition density. Model credit risk menunjukkan bahwa kombinasi faktor ini menjelaskan mayoritas variasi dalam default rate."
+    }
+  ],
+  "government_examples": [
+    {
+      "query": "Kecamatan mana yang paling butuh intervensi infrastruktur?",
+      "intent": "priority_identification",
+      "retrieved_docs": [
+        "cluster_summaries",
+        "location_profiles"
+      ],
+      "expected_response": "Kecamatan-kecamatan di cluster High-Risk Underserved (priority rank #1) paling membutuhkan intervensi infrastruktur. Cluster ini memiliki skor infrastruktur terendah dan mencakup sejumlah besar UMKM. Rekomendasi: fokus pada akses jalan, jaringan internet, dan proximity ke fasilitas keuangan."
+    },
+    {
+      "query": "Berapa anggaran yang dibutuhkan untuk program digitalisasi UMKM?",
+      "intent": "budget_planning",
+      "retrieved_docs": [
+        "cluster_summaries",
+        "model_insights"
+      ],
+      "expected_response": "Berdasarkan analisis cluster, prioritas digitalisasi tertinggi ada di cluster dengan digital adoption < 50%. Estimasi impact dari policy simulation: program digitalisasi dapat meningkatkan skor potensi rata-rata dan survival rate. Alokasi anggaran proporsional terhadap jumlah UMKM affected."
+    },
+    {
+      "query": "Apa dampak ekspansi KUR terhadap UMKM?",
+      "intent": "policy_impact",
+      "retrieved_docs": [
+        "model_insights"
+      ],
+      "expected_response": "Simulasi What-If menunjukkan bahwa ekspansi KUR +20% dapat meningkatkan skor potensi rata-rata, dengan mayoritas UMKM di area low-KUR mengalami improvement. Program ini berpotensi menghasilkan UMKM baru di atas threshold viable."
+    },
+    {
+      "query": "Cluster mana yang harus diprioritaskan untuk program pemberdayaan?",
+      "intent": "cluster_prioritization",
+      "retrieved_docs": [
+        "cluster_summaries"
+      ],
+      "expected_response": "Urutan prioritas pemberdayaan: 1) High-Risk Underserved - kebutuhan paling mendesak, 2) Rural Developing - potensi transformasi tinggi, 3) Moderate Established - perlu dukungan scaling. Alokasi anggaran mengikuti priority score dan jumlah UMKM terdampak."
+    },
+    {
+      "query": "Bagaimana distribusi UMKM berdasarkan tingkat kerentanan?",
+      "intent": "vulnerability_mapping",
+      "retrieved_docs": [
+        "cluster_summaries",
+        "location_profiles"
+      ],
+      "expected_response": "Distribusi kerentanan UMKM: cluster High-Risk Underserved memiliki vulnerability tertinggi (low survival + high risk), diikuti Rural Developing. Total UMKM vulnerable perlu mendapat perhatian khusus dalam program perlindungan sosial."
+    }
+  ],
+  "investor_examples": [
+    {
+      "query": "Di mana peluang investasi terbaik untuk sektor makanan?",
+      "intent": "sector_opportunity",
+      "retrieved_docs": [
+        "location_profiles",
+        "cluster_summaries"
+      ],
+      "expected_response": "Peluang investasi sektor makanan terbaik berada di kecamatan-kecamatan dengan: 1) Populasi tinggi tapi kompetisi rendah (market gap), 2) Infrastruktur memadai (skor > 70), 3) Income per kapita tinggi (daya beli). Top locations teridentifikasi dari cluster Urban Digital Leaders dan Suburban Growth."
+    },
+    {
+      "query": "Cluster mana yang memberikan ROI tertinggi?",
+      "intent": "roi_analysis",
+      "retrieved_docs": [
+        "cluster_summaries",
+        "model_insights"
+      ],
+      "expected_response": "Berdasarkan investment ranking, cluster Urban Digital Leaders memberikan ROI tertinggi dengan investment score tertinggi. Faktor pendorong: growth potential maksimal, survival rate tinggi, dan revenue level kuat. Total market size cluster ini sangat signifikan."
+    },
+    {
+      "query": "Bagaimana potensi pasar UMKM di area suburban?",
+      "intent": "market_sizing",
+      "retrieved_docs": [
+        "cluster_summaries",
+        "location_profiles"
+      ],
+      "expected_response": "Area suburban (cluster Suburban Growth) menunjukkan potensi pasar yang menarik: pertumbuhan populasi dari urban spillover, infrastruktur yang berkembang, dan tingkat kompetisi yang masih moderat. Market gap analysis menunjukkan peluang di sektor-sektor tertentu yang belum terlayani."
+    },
+    {
+      "query": "Area mana yang cocok untuk fintech lending?",
+      "intent": "fintech_opportunity",
+      "retrieved_docs": [
+        "location_profiles",
+        "model_insights"
+      ],
+      "expected_response": "Area potensial untuk fintech lending: kecamatan dengan penetrasi KUR rendah (<20%), jarak ke bank jauh (>5km), tapi memiliki akses internet memadai (>60%). Ini menunjukkan demand untuk layanan keuangan yang belum terpenuhi oleh institusi tradisional."
+    },
+    {
+      "query": "Apa risiko investasi di area rural?",
+      "intent": "risk_assessment",
+      "retrieved_docs": [
+        "cluster_summaries",
+        "location_profiles"
+      ],
+      "expected_response": "Risiko investasi di area rural (cluster Rural Developing): 1) Survival rate lebih rendah dari urban, 2) Infrastruktur terbatas mempengaruhi operasional, 3) Risiko bencana alam di beberapa area, 4) Daya beli terbatas. Mitigasi: fokus pada sektor esensial dengan barrier to entry rendah."
+    }
+  ]
+}
