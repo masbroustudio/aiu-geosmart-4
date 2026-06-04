@@ -33,7 +33,7 @@ function getAuthHeaders(): Record<string, string> {
   const token = getAuthToken();
   return {
     'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` }),
+    ...(token && { 'X-Custom-Authorization': `Bearer ${token}` }),
   };
 }
 

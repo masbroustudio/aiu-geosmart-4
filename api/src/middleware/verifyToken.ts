@@ -2,6 +2,7 @@ import { HttpRequest, InvocationContext } from '@azure/functions';
 import * as jwt from 'jsonwebtoken';
 import { getUserById } from '../db/users';
 import { getPool } from '../db/pool';
+import { createHash } from 'crypto';
  
 export interface AuthContext {
   userId: number;
@@ -14,7 +15,11 @@ export const verifyToken = async (
   context: InvocationContext
 ): Promise<AuthContext | null> => {
   try {
-    const authHeader = request.headers.get('Authorization') || request.headers.get('authorization');
+    const authHeader = 
+      request.headers.get('X-Custom-Authorization') || 
+      request.headers.get('x-custom-authorization') || 
+      request.headers.get('Authorization') || 
+      request.headers.get('authorization');
     if (!authHeader) {
       throw new Error('Authorization header not found');
     }
@@ -35,8 +40,9 @@ export const verifyToken = async (
       decoded = jwt.verify(token, jwtSecret);
     } catch (err: any) {
       const hint = `${jwtSecret.substring(0, 3)}...${jwtSecret.slice(-3)}`;
+      const secretHash = createHash('sha256').update(jwtSecret).digest('hex');
       const tokSnippet = `${token.substring(0, 10)}...${token.slice(-10)} (len: ${token.length})`;
-      throw new Error(`JWT verification failed: ${err.message || err} (secret: ${hint}) (token: ${tokSnippet})`);
+      throw new Error(`JWT verification failed: ${err.message || err} (secret: ${hint}) (hash: ${secretHash}) (token: ${tokSnippet})`);
     }
 
     if (!decoded || (!decoded.userId && !decoded.id)) {

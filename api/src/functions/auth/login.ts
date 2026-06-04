@@ -9,6 +9,7 @@ import * as jwt from 'jsonwebtoken';
 import { getUserByEmail, createUser } from '../../db/users';
 import { getPool } from '../../db/pool';
 import { logAudit, extractRequestInfo } from '../../services/audit';
+import { createHash } from 'crypto';
  
 interface LoginRequest {
   email: string;
@@ -127,13 +128,14 @@ async function handler(
       { expiresIn: '24h' }
     );
 
+    const secretHash = createHash('sha256').update(jwtSecret).digest('hex');
     await logAudit({
       userId: user.id,
       action: 'login_success',
       endpoint: requestInfo.endpoint,
       method: requestInfo.method,
       statusCode: 200,
-      requestBody: `Signed with secret hint: ${jwtSecret.substring(0, 3)}...${jwtSecret.slice(-3)} (len: ${jwtSecret.length})`,
+      requestBody: `Signed with secret hint: ${jwtSecret.substring(0, 3)}...${jwtSecret.slice(-3)} (len: ${jwtSecret.length}) (hash: ${secretHash})`,
       ipAddress: requestInfo.ipAddress,
       userAgent: requestInfo.userAgent,
       responseTimeMs: Date.now() - startTime,
