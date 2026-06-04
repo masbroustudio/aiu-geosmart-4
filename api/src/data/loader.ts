@@ -67,6 +67,13 @@ let govPriorityKecamatan: GovPriorityKecamatan[] | null = null;
 let executiveSummary: ExecutiveSummary | null = null;
 let knowledgeBase: KnowledgeBase | null = null;
 
+export function clearClusterCache() {
+  clusterProfiles = null;
+  govPriorityClusters = null;
+  investmentOpps = null;
+  umkmClusteredData = null;
+}
+
 function parseUmkmRecord(raw: Record<string, string>): UmkmRecord {
   return {
     kabupaten_kota: raw.kabupaten_kota || "",

@@ -300,7 +300,15 @@ export default function CreditScoringPage() {
                 {/* Metrics */}
                 <div className="p-4 rounded-xl bg-slate-950 border border-slate-900 flex flex-col justify-between">
                   <div>
-                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Probability of Default</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Probability of Default</span>
+                      <div className="group relative">
+                        <HelpCircle className="w-3.5 h-3.5 text-slate-500 hover:text-slate-400 cursor-help" />
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[9px] text-slate-300 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 leading-normal pointer-events-none">
+                          <strong>Konteks Model Notebook:</strong> PD ini adalah estimasi risiko gagal bayar (tidak bertahan) dalam horizon <strong>3 tahun</strong>, selaras dengan variabel target <em>is_survived_3yr</em> pada notebook modeling XGBoost.
+                        </div>
+                      </div>
+                    </div>
                     <p className="text-2xl font-extrabold text-red-400 mt-1">{scoringResult.predicted_pd}%</p>
                     <p className="text-[9px] text-slate-400 mt-1">Kemungkinan gagal bayar dalam 3 tahun</p>
                   </div>
@@ -329,6 +337,67 @@ export default function CreditScoringPage() {
                 <p className="text-[10px] text-slate-300 leading-normal">
                   <strong>Analisis ML:</strong> {scoringResult.explanation}
                 </p>
+              </div>
+
+              {/* Dynamic Banking Domain Explanations (OJK & SHAP Improvement Guidance) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-850 pt-4">
+                {/* Kolektibilitas OJK & Status */}
+                <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-2">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
+                    Kategori Kolektibilitas OJK (Pencocokan)
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-3.5 h-3.5 rounded-full ${
+                      scoringResult.credit_score >= 650 ? 'bg-emerald-500' :
+                      scoringResult.credit_score >= 550 ? 'bg-amber-500' : 'bg-rose-500'
+                    }`} />
+                    <p className="text-xs font-bold text-white">
+                      {scoringResult.credit_score >= 700 ? 'Kolektibilitas 1 (Lancar) - Sangat Layak' :
+                       scoringResult.credit_score >= 650 ? 'Kolektibilitas 1 (Lancar) - Layak' :
+                       scoringResult.credit_score >= 550 ? 'Kolektibilitas 2 (Dalam Perhatian Khusus)' :
+                       scoringResult.credit_score >= 450 ? 'Kolektibilitas 3-4 (Kurang Lancar / Diragukan)' :
+                       'Kolektibilitas 5 (Macet) - Kritis'}
+                    </p>
+                  </div>
+                  <p className="text-[9.5px] text-slate-400 leading-normal">
+                    {scoringResult.credit_score >= 650 
+                      ? 'Profil risiko sangat baik. Direkomendasikan untuk penyaluran kredit dengan plafon optimal dan bunga bersaing (KUR).'
+                      : scoringResult.credit_score >= 550
+                      ? 'Risiko moderat. Kredit disarankan bersyarat dengan jaminan tambahan atau monitoring rasio perputaran kas secara periodik.'
+                      : 'Risiko tinggi/kritis. Aplikasi dinilai tidak aman. Disarankan melakukan restrukturisasi rencana bisnis sebelum pengajuan ulang.'}
+                  </p>
+                </div>
+
+                {/* Rekomendasi Peningkatan Skor */}
+                <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-2">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
+                    Rekomendasi Peningkatan Skor Kredit
+                  </span>
+                  <ul className="space-y-1.5 text-[9.5px] text-slate-455">
+                    {!digital && (
+                      <li className="flex items-start gap-1">
+                        <span className="text-amber-500 font-bold">•</span>
+                        <span className="text-slate-400">Aktifkan kehadiran digital (adopsi e-commerce/sosmed) untuk menaikkan skor hingga <strong>+40 poin</strong>.</span>
+                      </li>
+                    )}
+                    {omset < 5000000 && (
+                      <li className="flex items-start gap-1">
+                        <span className="text-amber-500 font-bold">•</span>
+                        <span className="text-slate-400">Tingkatkan omset bulanan di atas Rp 5 Juta untuk memperoleh tambahan skor <strong>+50 poin</strong>.</span>
+                      </li>
+                    )}
+                    {new Date().getFullYear() - tahunBerdiri <= 3 && (
+                      <li className="flex items-start gap-1">
+                        <span className="text-slate-500 font-bold">•</span>
+                        <span className="text-slate-400">Menjaga kelangsungan usaha hingga usia bisnis &gt;3-5 tahun akan menaikkan skor sebesar <strong>+20 s/d +40 poin</strong>.</span>
+                      </li>
+                    )}
+                    <li className="flex items-start gap-1">
+                      <span className="text-emerald-500 font-bold">•</span>
+                      <span className="text-slate-400">Titik acuan dasar model (Intercept) dihitung pada angka <strong>650</strong> (skor rata-rata UMKM).</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           ) : (

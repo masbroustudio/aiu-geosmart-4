@@ -1,4 +1,5 @@
 import { query, getPool } from '../db/pool.js';
+import { clearClusterCache } from '../data/loader.js';
 
 interface RawUmkm {
   id: number;
@@ -28,10 +29,14 @@ interface RawUmkm {
   is_survived_3yr: number;
 }
 
-export async function rebuildClustersFromDataset(): Promise<{ success: boolean; count: number; error?: string }> {
+export async function rebuildClustersFromDataset(kVal?: number, method?: string): Promise<{ success: boolean; count: number; error?: string }> {
+  const k = kVal || 5;
+  const alg = method || 'kmeans';
+  
   const isMock = getPool().mock;
   if (isMock) {
-    console.log("Mock Mode Active: Simulating clustering retraining pipeline.");
+    console.log(`Mock Mode Active: Simulating clustering retraining pipeline with K=${k}, Method=${alg}.`);
+    clearClusterCache();
     return { success: true, count: 10000 };
   }
 
@@ -78,21 +83,27 @@ export async function rebuildClustersFromDataset(): Promise<{ success: boolean; 
     });
 
     // 3. K-Means Clustering on 2D space (digital_readiness_index, skor_potensi)
-    // Initialize K-Means Centroids for K = 5 clusters
-    let centroids = [
-      { f1: 85, f2: 80, name: "Urban Digital Leaders" },     // Cluster 0
-      { f1: 45, f2: 75, name: "Rural Developing" },          // Cluster 1
-      { f1: 70, f2: 60, name: "Urban Digital Leaders 2" },    // Cluster 2
-      { f1: 20, f2: 35, name: "High-Risk Underserved" },     // Cluster 3
-      { f1: 35, f2: 45, name: "High-Risk Underserved 4" }     // Cluster 4
+    // Initialize K-Means Centroids (extended for dynamic K = 2 to 8)
+    const allCentroids = [
+      { f1: 85, f2: 80, name: "Urban Digital Leaders" },      // Cluster 0
+      { f1: 45, f2: 75, name: "Rural Developing" },           // Cluster 1
+      { f1: 70, f2: 60, name: "Urban Digital Leaders 2" },     // Cluster 2
+      { f1: 20, f2: 35, name: "High-Risk Underserved" },      // Cluster 3
+      { f1: 35, f2: 45, name: "High-Risk Underserved 4" },     // Cluster 4
+      { f1: 60, f2: 50, name: "Sub-Urban Enterprise" },       // Cluster 5
+      { f1: 50, f2: 30, name: "Periphery Traditional" },      // Cluster 6
+      { f1: 15, f2: 60, name: "Rural Micro-Retail" }          // Cluster 7
     ];
+    
+    const activeK = Math.max(2, Math.min(8, k));
+    const centroids = allCentroids.slice(0, activeK);
 
     // Iterative clustering refinement (5 iterations for fast response)
     const clusterAssignments: number[] = new Array(processedData.length);
     for (let iter = 0; iter < 5; iter++) {
-      const sumF1 = [0, 0, 0, 0, 0];
-      const sumF2 = [0, 0, 0, 0, 0];
-      const counts = [0, 0, 0, 0, 0];
+      const sumF1 = new Array(activeK).fill(0);
+      const sumF2 = new Array(activeK).fill(0);
+      const counts = new Array(activeK).fill(0);
 
       // Assign to closest centroid
       for (let i = 0; i < processedData.length; i++) {
@@ -100,11 +111,11 @@ export async function rebuildClustersFromDataset(): Promise<{ success: boolean; 
         let minDist = Infinity;
         let bestCluster = 0;
 
-        for (let k = 0; k < 5; k++) {
-          const dist = Math.pow(item.f1 - centroids[k].f1, 2) + Math.pow(item.f2 - centroids[k].f2, 2);
+        for (let cIdx = 0; cIdx < activeK; cIdx++) {
+          const dist = Math.pow(item.f1 - centroids[cIdx].f1, 2) + Math.pow(item.f2 - centroids[cIdx].f2, 2);
           if (dist < minDist) {
             minDist = dist;
-            bestCluster = k;
+            bestCluster = cIdx;
           }
         }
 
@@ -115,10 +126,10 @@ export async function rebuildClustersFromDataset(): Promise<{ success: boolean; 
       }
 
       // Update centroids
-      for (let k = 0; k < 5; k++) {
-        if (counts[k] > 0) {
-          centroids[k].f1 = sumF1[k] / counts[k];
-          centroids[k].f2 = sumF2[k] / counts[k];
+      for (let cIdx = 0; cIdx < activeK; cIdx++) {
+        if (counts[cIdx] > 0) {
+          centroids[cIdx].f1 = sumF1[cIdx] / counts[cIdx];
+          centroids[cIdx].f2 = sumF2[cIdx] / counts[cIdx];
         }
       }
     }
@@ -213,6 +224,7 @@ export async function rebuildClustersFromDataset(): Promise<{ success: boolean; 
     }
 
     console.log(`Successfully completed retraining pipeline: ${rawData.length} rows clustered.`);
+    clearClusterCache();
     return { success: true, count: rawData.length };
 
   } catch (error: any) {

@@ -2,11 +2,127 @@
 
 import { useState, useEffect } from 'react';
 import { clusterData as staticClusterData } from '@/lib/static-data';
-import { fetchClusters, retrainClustering } from '@/lib/api';
+import { fetchClusters, retrainClustering, fetchStatus } from '@/lib/api';
 import DownloadCSVButton from '@/components/ui/DownloadCSVButton';
 import { useToast } from '@/lib/toast-context';
 import { Activity, TrendingUp, HelpCircle, Layers } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, ResponsiveContainer } from 'recharts';
+
+// Helper to dynamically simulate K clustering profiles for Sandbox/Mock mode
+function generateMockClusterData(k: number, method: string) {
+  const clusterNames = [
+    'Urban Digital Leaders',
+    'Rural Developing',
+    'Sub-Urban Enterprise',
+    'High-Risk Underserved',
+    'Modern Retail Hubs',
+    'Agriculture & Micro-Finance',
+    'Traditional Periphery',
+    'Creative Sector Growth'
+  ];
+
+  const profiles = [];
+  const govPriority = [];
+  const investment = [];
+
+  const totalUmkm = 10000;
+  const counts = [];
+  let remaining = totalUmkm;
+  for (let i = 0; i < k; i++) {
+    if (i === k - 1) {
+      counts.push(remaining);
+    } else {
+      const share = Math.round((totalUmkm / k) * (0.85 + Math.random() * 0.3));
+      const count = Math.min(remaining - 20, share);
+      counts.push(count);
+      remaining -= count;
+    }
+  }
+
+  for (let i = 0; i < k; i++) {
+    const name = clusterNames[i % clusterNames.length] + (i >= clusterNames.length ? ` (${Math.floor(i / clusterNames.length) + 1})` : '');
+    const count = counts[i];
+
+    // Make metrics distinct depending on cluster type/index
+    let avg_score = 30 + (i * 60) / (k - 1 || 1) + (Math.random() * 6 - 3);
+    avg_score = Math.max(10, Math.min(95, avg_score));
+    
+    let infra_score = 35 + (i * 55) / (k - 1 || 1) + (Math.random() * 6 - 3);
+    infra_score = Math.max(15, Math.min(95, infra_score));
+
+    let digital_pct = 20 + (i * 70) / (k - 1 || 1) + (Math.random() * 8 - 4);
+    digital_pct = Math.max(5, Math.min(98, digital_pct));
+
+    let survival_rate = 55 + (i * 30) / (k - 1 || 1) + (Math.random() * 4 - 2);
+    survival_rate = Math.max(50, Math.min(95, survival_rate));
+
+    let avg_omset = 30 + (i * 60) / (k - 1 || 1) + (Math.random() * 8 - 4);
+    avg_omset = Math.max(20, Math.min(99, avg_omset));
+
+    let income = 3.5 + (i * 9.5) / (k - 1 || 1) + (Math.random() * 2 - 1);
+    income = Math.max(2.0, Math.min(15.0, income));
+
+    profiles.push({
+      id: i,
+      name,
+      n_umkm: count,
+      avg_score: parseFloat(avg_score.toFixed(1)),
+      infra_score: parseFloat(infra_score.toFixed(1)),
+      digital_pct: parseFloat(digital_pct.toFixed(1)),
+      survival_rate: parseFloat(survival_rate.toFixed(1)),
+      avg_omset: parseFloat(avg_omset.toFixed(1)),
+      income: parseFloat(income.toFixed(2))
+    });
+  }
+
+  // Generate government priority ranking (Lower scores = higher priority)
+  const rankedGov = profiles.map(p => {
+    const score = (100 - p.avg_score + (100 - p.infra_score)) / 200;
+    return {
+      cluster: p.name,
+      n_umkm: p.n_umkm,
+      priority_score: parseFloat(score.toFixed(3))
+    };
+  }).sort((a, b) => b.priority_score - a.priority_score);
+
+  const totalPriorityScore = rankedGov.reduce((sum, item) => sum + item.priority_score, 0);
+  for (let i = 0; i < k; i++) {
+    const item = rankedGov[i];
+    const budget_pct = totalPriorityScore > 0 ? (item.priority_score / totalPriorityScore) * 100 : 100 / k;
+    govPriority.push({
+      rank: i + 1,
+      cluster: item.cluster,
+      n_umkm: item.n_umkm,
+      priority_score: item.priority_score,
+      budget_pct: parseFloat(budget_pct.toFixed(1))
+    });
+  }
+
+  // Generate investment opportunity ranking
+  const rankedInv = profiles.map(p => {
+    const score = (p.avg_score + p.digital_pct + p.avg_omset) / 300;
+    const market_size = Math.round(p.n_umkm * p.avg_omset * (0.85 + Math.random() * 0.3));
+    return {
+      cluster: p.name,
+      n_umkm: p.n_umkm,
+      investment_score: parseFloat(score.toFixed(3)),
+      market_size_juta: market_size
+    };
+  }).sort((a, b) => b.investment_score - a.investment_score);
+
+  for (let i = 0; i < k; i++) {
+    const item = rankedInv[i];
+    investment.push({
+      rank: i + 1,
+      cluster: item.cluster,
+      n_umkm: item.n_umkm,
+      investment_score: item.investment_score,
+      market_size_juta: item.market_size_juta
+    });
+  }
+
+  return { profiles, govPriority, investment };
+}
 
 export default function ClusteringPage() {
   const clusterColors = ['#10B981', '#3B82F6', '#8B5CF6', '#EF4444', '#F59E0B', '#EC4899', '#06B6D4', '#6366F1'];
@@ -16,11 +132,15 @@ export default function ClusteringPage() {
   const [kVal, setKVal] = useState(5);
   const [method, setMethod] = useState('kmeans');
   const [retraining, setRetraining] = useState(false);
+  const [isMockDb, setIsMockDb] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     async function loadData() {
       try {
+        const status = await fetchStatus();
+        if (!cancelled) setIsMockDb(status.dbType === 'mock');
+        
         const data = await fetchClusters();
         if (!cancelled) setClusterData(data);
       } catch {
@@ -37,13 +157,17 @@ export default function ClusteringPage() {
     setRetraining(true);
     try {
       const response = await retrainClustering({ k: kVal, method });
-      if (response && response.success) {
-        addToast(`Model clustering berhasil dilatih ulang! Memproses ${response.data?.processed_count || 10000} data UMKM.`, 'success');
+      const isSuccess = response && (!response.error || response.success);
+      
+      if (isSuccess && !isMockDb) {
+        addToast(`Model clustering berhasil dilatih ulang! Memproses ${response.processed_count || response.data?.processed_count || 10000} data UMKM.`, 'success');
         const data = await fetchClusters();
         setClusterData(data);
       } else {
-        // Fallback simulation in local mode
+        // Fallback simulation in Sandbox/Mock Mode
         setTimeout(() => {
+          const dynamicData = generateMockClusterData(kVal, method);
+          setClusterData(dynamicData);
           addToast(`[Sandbox Mode] Model clustering berhasil dilatih ulang secara virtual dengan K=${kVal}!`, 'success');
           setRetraining(false);
         }, 1500);
@@ -52,6 +176,8 @@ export default function ClusteringPage() {
     } catch (err) {
       console.error("Gagal melatih model di server:", err);
       setTimeout(() => {
+        const dynamicData = generateMockClusterData(kVal, method);
+        setClusterData(dynamicData);
         addToast(`[Sandbox Mode] Model clustering berhasil dilatih ulang secara virtual dengan K=${kVal}!`, 'success');
         setRetraining(false);
       }, 1500);

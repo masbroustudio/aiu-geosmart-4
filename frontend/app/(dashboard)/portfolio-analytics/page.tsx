@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Users, DollarSign, TrendingDown, AlertTriangle } from 'lucide-react';
+import { Users, DollarSign, TrendingDown, AlertTriangle, HelpCircle, ShieldAlert, Layers, Activity, ShieldCheck } from 'lucide-react';
 import KPICard from '@/components/dashboard/KPICard';
 import DownloadCSVButton from '@/components/ui/DownloadCSVButton';
 import { portfolioData, PORTFOLIO_COLORS } from '@/lib/portfolio-data';
@@ -20,10 +20,79 @@ function formatRupiah(value: number): string {
   return `Rp ${value.toLocaleString()}`;
 }
 
+// Basel III IRB Mathematical Helpers for Capital Adequacy Simulation
+function cumNormalDist(x: number): number {
+  const a1 = 0.254829592;
+  const a2 = -0.284496736;
+  const a3 = 1.421413741;
+  const a4 = -1.453152027;
+  const a5 = 1.061405429;
+  const p = 0.3275911;
+
+  const sign = x < 0 ? -1 : 1;
+  const absX = Math.abs(x) / Math.sqrt(2.0);
+
+  const t = 1.0 / (1.0 + p * absX);
+  const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-absX * absX);
+
+  return 0.5 * (1.0 + sign * y);
+}
+
+function normSinv(p: number): number {
+  const a = [-3.969683028665376e+01,  2.209460984245205e+02, -2.759285104469687e+02,  1.383577518672690e+02, -3.066479895689469e+01,  2.506628277459239e+00];
+  const b = [-5.447609879822406e+01,  1.615858368580409e+02, -1.556989798598866e+02,  6.680131188771972e+01, -1.328068155288572e+01];
+  const c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00,  4.374664141464968e+00,  2.938163982698783e+00];
+  const d = [ 7.784695709041462e-03,  3.224671290700398e-01,  2.445134137142996e+00,  3.754408661907416e+00];
+
+  const p_low = 0.02425;
+  const p_high = 1 - p_low;
+
+  let x = 0;
+  let q = 0;
+  let r = 0;
+
+  if (p < p_low) {
+    q = Math.sqrt(-2 * Math.log(p));
+    x = (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+        ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  } else if (p <= p_high) {
+    q = p - 0.5;
+    r = q * q;
+    x = (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
+        (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+  } else {
+    q = Math.sqrt(-2 * Math.log(1 - p));
+    x = -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+         ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  }
+
+  return x;
+}
+
+function calcBaselK(pd: number, lgd: number = 0.45): number {
+  if (pd <= 0) return 0;
+  if (pd >= 1) pd = 0.9999;
+  
+  // Correlation formula for SME Retail under Basel III
+  const R = 0.03 * ((1 - Math.exp(-35 * pd)) / (1 - Math.exp(-35))) +
+            0.16 * (1 - (1 - Math.exp(-35 * pd)) / (1 - Math.exp(-35)));
+
+  const g_pd = normSinv(Math.max(0.000001, Math.min(0.999999, pd)));
+  const g_999 = 3.09023; // normSinv(0.999)
+
+  const term1 = g_pd / Math.sqrt(1 - R);
+  const term2 = Math.sqrt(R / (1 - R)) * g_999;
+
+  const n_term = cumNormalDist(term1 + term2);
+  const k = lgd * n_term - pd * lgd;
+  return Math.max(0, k);
+}
+
 export default function PortfolioAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [showStress, setShowStress] = useState(false);
   const [shockPercent, setShockPercent] = useState(30);
+  const [activeTab, setActiveTab] = useState<'macro' | 'basel' | 'buckets'>('macro');
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 500);
@@ -84,6 +153,64 @@ export default function PortfolioAnalyticsPage() {
 
   const additionalLoss = stressedEL - baseEL;
 
+  // Basel III IRB Calculations based on Notebook 04 PD Buckets
+  const totalExposure = portfolioData.totalExposure;
+  const totalUmkm = portfolioData.totalUmkm;
+  const baseCAR = 18.5; // 18.5%
+
+  let baseTotalCapitalRequired = 0;
+  let baseTotalEL = 0;
+  let stressedTotalCapitalRequired = 0;
+  let stressedTotalEL = 0;
+
+  const calculatedBuckets = portfolioData.pdRegulatoryBuckets.map((b) => {
+    const exp = (b.count / totalUmkm) * totalExposure;
+    
+    // Base Calculations
+    const basePDVal = b.avgPD / 100;
+    const baseELVal = basePDVal * 0.45 * exp;
+    const baseK = calcBaselK(basePDVal, 0.45);
+    const baseKead = baseK * exp;
+    
+    baseTotalCapitalRequired += baseKead;
+    baseTotalEL += baseELVal;
+
+    // Stressed Calculations
+    const stressedPDVal = showStress 
+      ? Math.min(0.9999, basePDVal * shockMultiplier) 
+      : basePDVal;
+    const stressedELVal = stressedPDVal * 0.45 * exp;
+    const stressedK = calcBaselK(stressedPDVal, 0.45);
+    const stressedKead = stressedK * exp;
+
+    stressedTotalCapitalRequired += stressedKead;
+    stressedTotalEL += stressedELVal;
+
+    return {
+      bucket: b.bucket,
+      count: b.count,
+      pct: (b.count / totalUmkm) * 100,
+      basePD: b.avgPD,
+      stressedPD: parseFloat((stressedPDVal * 100).toFixed(2)),
+      baseEL: baseELVal,
+      stressedEL: stressedELVal,
+      baseELRate: b.elRate,
+      stressedELRate: parseFloat((stressedPDVal * 0.45 * 100).toFixed(2)),
+      exposure: exp
+    };
+  });
+
+  const baseRWA = baseTotalCapitalRequired * 12.5;
+  const stressedRWA = stressedTotalCapitalRequired * 12.5;
+
+  const baseCapitalRequired = baseTotalCapitalRequired;
+  const stressedCapitalRequired = stressedTotalCapitalRequired;
+
+  const bankCapitalBase = (baseCAR / 100) * baseRWA;
+  const additionalEL = stressedTotalEL - baseTotalEL;
+  const bankCapitalStressed = Math.max(0, bankCapitalBase - (showStress ? additionalEL : 0));
+  const stressedCARVal = stressedRWA > 0 ? (bankCapitalStressed / stressedRWA) * 100 : 0;
+
   // Cohort NPL data
   const cohortData = [
     { name: '12 Bulan', 'Cohort 2023': 1.20, 'Cohort 2024': 1.45, 'Cohort 2025': 1.80 },
@@ -125,15 +252,17 @@ export default function PortfolioAnalyticsPage() {
           color="#F59E0B"
           trend="down"
           delay={0.2}
+          labelTooltip="Rata-rata Probability of Default (PD) tertimbang berdasarkan eksposur kredit masing-masing nasabah UMKM (basis 3 tahun)."
         />
         <KPICard
           icon={AlertTriangle}
           label="Expected Loss"
           value={formatRupiah(portfolioData.expectedLoss)}
-          subtitle="EL = EAD x PD x LGD (70%)"
+          subtitle="EL = EAD x PD x LGD (45%)"
           color="#EF4444"
           trend="down"
           delay={0.3}
+          labelTooltip="Estimasi kerugian finansial yang diantisipasi (Exposure at Default x PD x Loss Given Default 45%) sesuai standar CKPN PSAK 71 / IFRS 9 dan basis perhitungan dari model credit risk di notebook (Basel F-IRB standard)."
         />
       </div>
 
@@ -229,7 +358,15 @@ export default function PortfolioAnalyticsPage() {
             <h3 className="text-lg font-semibold text-white mb-4">Indeks Konsentrasi & Diversifikasi</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <p className="text-sm text-slate-400 mb-2">Herfindahl-Hirschman Index (HHI)</p>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <p className="text-sm text-slate-400">Herfindahl-Hirschman Index (HHI)</p>
+                  <div className="group relative">
+                    <HelpCircle className="w-3.5 h-3.5 text-slate-500 hover:text-slate-400 cursor-help" />
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[9px] text-slate-350 font-normal shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 leading-normal pointer-events-none">
+                      Mengukur tingkat konsentrasi kredit. Skor &lt; 1500 berarti portofolio terdistribusi merata (risiko rendah). Skor &gt; 2500 berarti sangat terpusat pada wilayah/sektor tertentu (risiko tinggi).
+                    </div>
+                  </div>
+                </div>
                 <p className="text-3xl font-bold text-white">{portfolioData.hhi.toLocaleString()}</p>
                 <p className="text-xs text-slate-500 mt-1">
                   {'< 1500 = Rendah | 1500-2500 = Moderat | > 2500 = Tinggi'}
@@ -323,7 +460,8 @@ export default function PortfolioAnalyticsPage() {
         </div>
 
         {showStress && (
-          <div className="space-y-4">
+          <div className="space-y-4 animate-fade-in">
+            {/* Slider */}
             <div className="p-4 rounded-xl bg-slate-950 border border-slate-900 space-y-3">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400 font-semibold">Tingkat Goncangan Makroekonomi:</span>
@@ -347,69 +485,284 @@ export default function PortfolioAnalyticsPage() {
               </div>
             </div>
 
-            {/* Macroeconomic Indicators Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3 bg-slate-950 border border-slate-900 rounded-xl flex flex-col justify-between">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">BI-Rate</span>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-base font-extrabold text-red-400">{biRate.toFixed(2)}%</span>
-                  {shockPercent > 0 && (
-                    <span className="text-[9px] text-red-500">+{((biRate - baseBiRate)).toFixed(2)}%</span>
-                  )}
+            {/* Tabs Navigation */}
+            <div className="flex border-b border-slate-800/80 mt-4 mb-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab('macro')}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all ${
+                  activeTab === 'macro'
+                    ? 'border-primary text-white bg-slate-800/30'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Activity className="w-3.5 h-3.5" />
+                Transmisi Makro & CKPN
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('basel')}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all ${
+                  activeTab === 'basel'
+                    ? 'border-primary text-white bg-slate-800/30'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <ShieldAlert className="w-3.5 h-3.5" />
+                Permodalan Basel III
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('buckets')}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all ${
+                  activeTab === 'buckets'
+                    ? 'border-primary text-white bg-slate-800/30'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                Migrasi PD Bucket (Notebook)
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Tab Content 1: Transmisi Makro & CKPN (only shown when showStress is false, or activeTab is macro) */}
+        {(!showStress || activeTab === 'macro') && (
+          <div className="space-y-4">
+            {showStress && (
+              /* Macroeconomic Indicators Grid */
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-in">
+                <div className="p-3 bg-slate-950 border border-slate-900 rounded-xl flex flex-col justify-between">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">BI-Rate</span>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="text-base font-extrabold text-red-400">{biRate.toFixed(2)}%</span>
+                    {shockPercent > 0 && (
+                      <span className="text-[9px] text-red-500">+{((biRate - baseBiRate)).toFixed(2)}%</span>
+                    )}
+                  </div>
+                  <span className="text-[9px] text-slate-500 mt-1">Suku bunga acuan bank sentral</span>
                 </div>
-                <span className="text-[9px] text-slate-500 mt-1">Suku bunga acuan bank sentral</span>
+
+                <div className="p-3 bg-slate-950 border border-slate-900 rounded-xl flex flex-col justify-between">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Inflasi Jawa Barat</span>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="text-base font-extrabold text-red-400">{inflation.toFixed(2)}%</span>
+                    {shockPercent > 0 && (
+                      <span className="text-[9px] text-red-500">+{((inflation - baseInflation)).toFixed(2)}%</span>
+                    )}
+                  </div>
+                  <span className="text-[9px] text-slate-500 mt-1">Kenaikan harga barang tahunan</span>
+                </div>
+
+                <div className="p-3 bg-slate-950 border border-slate-900 rounded-xl flex flex-col justify-between">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">PDRB Growth (Sektor Utama)</span>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className={`text-base font-extrabold ${pdrbGrowth < 0 ? 'text-red-500' : 'text-emerald-400'}`}>
+                      {pdrbGrowth.toFixed(2)}%
+                    </span>
+                    {shockPercent > 0 && (
+                      <span className="text-[9px] text-red-500">-{((basePdrbGrowth - pdrbGrowth)).toFixed(2)}%</span>
+                    )}
+                  </div>
+                  <span className="text-[9px] text-slate-500 mt-1">Pertumbuhan ekonomi regional</span>
+                </div>
+              </div>
+            )}
+
+            {/* Expected Loss Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-lg bg-slate-800/50">
+                <p className="text-xs text-slate-400 mb-1">Base Expected Loss (CKPN)</p>
+                <p className="text-xl font-bold text-white">{formatRupiah(baseEL)}</p>
+                <p className="text-xs text-slate-500 font-mono">Avg PD: {basePD.toFixed(2)}% | LGD: 45%</p>
+              </div>
+              <div className={`p-4 rounded-lg transition-colors ${showStress ? 'bg-red-950/40 border border-red-500/20' : 'bg-slate-800/50'}`}>
+                <p className="text-xs text-slate-400 mb-1">Stressed Expected Loss</p>
+                <p className={`text-xl font-bold ${showStress ? 'text-red-400' : 'text-white'}`}>
+                  {formatRupiah(stressedEL)}
+                </p>
+                <p className="text-xs text-slate-500 font-mono">Avg PD: {stressedPD.toFixed(2)}% | LGD: 45%</p>
+              </div>
+              <div className={`p-4 rounded-lg transition-colors ${showStress ? 'bg-red-950/40 border border-red-500/20' : 'bg-slate-800/50'}`}>
+                <p className="text-xs text-slate-400 mb-1">Additional Loss (Beban Cadangan)</p>
+                <p className={`text-xl font-bold ${showStress ? 'text-red-400' : 'text-white'}`}>
+                  {formatRupiah(additionalLoss)}
+                </p>
+                <p className="text-xs text-slate-500 font-mono">
+                  {showStress ? `+${((additionalLoss/baseEL)*100).toFixed(1)}% dari CKPN normal` : '0% dari CKPN normal'}
+                </p>
+              </div>
+            </div>
+
+            {showStress && (
+              /* OJK Advisory Card */
+              <div className="p-4 rounded-xl bg-red-950/20 border border-red-900/30 space-y-2 mt-4 animate-fade-in-up">
+                <div className="flex items-center gap-2 text-red-400 font-bold text-xs">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>Laporan Sensitivitas CKPN & Ketahanan Aset (OJK Advisory)</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Simulasi goncangan makroekonomi sebesar <strong className="text-white">{shockPercent}%</strong> memproyeksikan suku bunga acuan BI-Rate berada pada level <strong className="text-white">{biRate.toFixed(2)}%</strong> dan inflasi Jabar naik ke <strong className="text-white">{inflation.toFixed(2)}%</strong>. Akibat transmisi makroekonomi ini, probabilitas gagal bayar tertimbang portofolio meningkat dari <strong className="text-slate-200">{basePD.toFixed(2)}%</strong> menjadi <strong className="text-red-400">{stressedPD.toFixed(2)}%</strong>.
+                </p>
+                <p className="text-xs text-slate-350 leading-relaxed">
+                  Kenaikan risiko ini menyebabkan beban CKPN (Expected Loss) bertambah sebesar <strong className="text-red-400">{formatRupiah(additionalLoss)}</strong> (naik <strong className="text-red-300">{((additionalLoss/baseEL)*100).toFixed(1)}%</strong>). Bank direkomendasikan meningkatkan penyisihan CKPN demi menjaga coverage ratio, terutama pada sektor makanan dan retail yang sangat sensitif terhadap suku bunga dan daya beli.
+                </p>
+                <div className="text-[9px] text-slate-500 font-mono pt-2 border-t border-slate-900">
+                  Formula Transmisi Makro (Notebook Model): PD_stres = PD_base * exp(2.2 * d(BI) + 1.8 * d(Inflasi) + 2.5 * d(Kontraksi PDRB))
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab Content 2: Dampak Permodalan Basel III */}
+        {showStress && activeTab === 'basel' && (
+          <div className="space-y-4 animate-fade-in">
+            {/* Basel III KPI Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-lg bg-slate-800/50">
+                <p className="text-xs text-slate-400 mb-1">Risk-Weighted Assets (RWA)</p>
+                <p className="text-xl font-bold text-white">{formatRupiah(stressedRWA)}</p>
+                <p className="text-xs text-slate-500 font-mono">
+                  Base: {formatRupiah(baseRWA)} ({stressedRWA < baseRWA 
+                    ? `-${((1 - stressedRWA / baseRWA) * 100).toFixed(1)}%` 
+                    : `+${((stressedRWA / baseRWA - 1) * 100).toFixed(1)}%`})
+                </p>
               </div>
 
-              <div className="p-3 bg-slate-950 border border-slate-900 rounded-xl flex flex-col justify-between">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Inflasi Jawa Barat</span>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-base font-extrabold text-red-400">{inflation.toFixed(2)}%</span>
-                  {shockPercent > 0 && (
-                    <span className="text-[9px] text-red-500">+{((inflation - baseInflation)).toFixed(2)}%</span>
-                  )}
-                </div>
-                <span className="text-[9px] text-slate-500 mt-1">Kenaikan harga barang tahunan</span>
+              <div className="p-4 rounded-lg bg-slate-800/50">
+                <p className="text-xs text-slate-400 mb-1">Capital Charge (Unexpected Loss)</p>
+                <p className="text-xl font-bold text-white">{formatRupiah(stressedCapitalRequired)}</p>
+                <p className="text-xs text-slate-500 font-mono">
+                  Rasio Modal (K): {(baseTotalCapitalRequired / totalExposure * 100).toFixed(2)}% {"\u2192"} {(stressedTotalCapitalRequired / totalExposure * 100).toFixed(2)}%
+                </p>
               </div>
 
-              <div className="p-3 bg-slate-950 border border-slate-900 rounded-xl flex flex-col justify-between">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">PDRB Growth (Sektor Utama)</span>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className={`text-base font-extrabold ${pdrbGrowth < 0 ? 'text-red-500' : 'text-emerald-400'}`}>
-                    {pdrbGrowth.toFixed(2)}%
-                  </span>
-                  {shockPercent > 0 && (
-                    <span className="text-[9px] text-red-500">-{((basePdrbGrowth - pdrbGrowth)).toFixed(2)}%</span>
-                  )}
-                </div>
-                <span className="text-[9px] text-slate-500 mt-1">Pertumbuhan ekonomi regional</span>
+              <div className={`p-4 rounded-lg border transition-colors ${
+                stressedCARVal < 8.0 
+                  ? 'bg-red-950/40 border-red-500/30' 
+                  : stressedCARVal < 12.0 
+                    ? 'bg-yellow-950/40 border-yellow-500/30' 
+                    : 'bg-emerald-950/40 border-emerald-500/30'
+              }`}>
+                <p className="text-xs text-slate-400 mb-1">Capital Adequacy Ratio (CAR)</p>
+                <p className={`text-xl font-bold ${
+                  stressedCARVal < 8.0 
+                    ? 'text-red-400' 
+                    : stressedCARVal < 12.0 
+                      ? 'text-yellow-400' 
+                      : 'text-emerald-400'
+                }`}>
+                  {stressedCARVal.toFixed(2)}%
+                </p>
+                <p className="text-xs text-slate-500 font-mono">
+                  Base: 18.50% | Batas Min OJK: 8.0%
+                </p>
+              </div>
+            </div>
+
+            {/* Explanatory Advisory */}
+            <div className={`p-4 rounded-xl border space-y-2 mt-4 ${
+              stressedCARVal < 8.0 
+                ? 'bg-red-950/20 border-red-900/30' 
+                : stressedCARVal < 12.0 
+                  ? 'bg-yellow-950/20 border-yellow-900/30' 
+                  : 'bg-emerald-950/20 border-emerald-900/30'
+            }`}>
+              <div className={`flex items-center gap-2 font-bold text-xs ${
+                stressedCARVal < 8.0 
+                  ? 'text-red-400' 
+                  : stressedCARVal < 12.0 
+                    ? 'text-yellow-400' 
+                    : 'text-emerald-400'
+              }`}>
+                <ShieldCheck className="w-4 h-4 animate-pulse" />
+                <span>Simulasi Ketahanan Modal (Basel III IRB SME Approach)</span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Di bawah standar **Basel III Internal Ratings-Based (IRB) untuk Retail SME**, Bank wajib mencadangkan modal berdasarkan estimasi Unexpected Loss. Dengan shock sebesar <strong className="text-white">+{shockPercent}%</strong>, CAR Bank disimulasikan turun dari <strong className="text-white">18.50%</strong> menjadi <strong className={`${stressedCARVal < 12.0 ? 'text-yellow-400' : 'text-white'}`}>{stressedCARVal.toFixed(2)}%</strong>. 
+              </p>
+              <p className="text-xs text-slate-350 leading-relaxed">
+                {stressedCARVal < 8.0 ? (
+                  <strong className="text-red-400">Peringatan Kritis: Rasio kecukupan modal (CAR) Bank berada di bawah batas minimum regulator (8.0%). Bank wajib melakukan injeksi modal atau membatasi eksposur kredit UMKM baru segera.</strong>
+                ) : stressedCARVal < 12.0 ? (
+                  <strong className="text-yellow-400">Peringatan: CAR mengalami penurunan signifikan mendekati threshold internal (12.0%). Disarankan melakukan pengetatan portofolio (kriteria screening) dan menahan pembagian dividen tahun ini.</strong>
+                ) : (
+                  <strong className="text-emerald-400">Rasio permodalan Bank masih dalam batas aman (CAR &gt; 12.0%). Bank memiliki modal yang cukup untuk menyerap potensi kerugian kredit akibat goncangan makroekonomi ini.</strong>
+                )}
+              </p>
+              <div className="text-[9px] text-slate-500 font-mono pt-2 border-t border-slate-900 leading-normal">
+                Keterangan Teknis RWA: Penurunan RWA dalam skenario stres ekstrem terjadi karena perpindahan aset ke kategori defaulted imminent (gagal bayar), di mana aset tersebut dihapus atau di-net-kan dengan cadangan kerugian (EL/CKPN) secara langsung sehingga mengurangi aset penimbang risiko lancar.
               </div>
             </div>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 rounded-lg bg-slate-800/50">
-            <p className="text-xs text-slate-400 mb-1">Base Expected Loss</p>
-            <p className="text-xl font-bold text-white">{formatRupiah(baseEL)}</p>
-            <p className="text-xs text-slate-500">PD: {basePD}%</p>
+        {/* Tab Content 3: Distribusi PD Bucket Regulasi */}
+        {showStress && activeTab === 'buckets' && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h4 className="text-sm font-semibold text-white">Distribusi Debitur per PD Bucket Regulasi</h4>
+                <p className="text-xs text-slate-400 mt-0.5">Migrasi risiko debitur (10,000 UMKMs) akibat goncangan makroekonomi.</p>
+              </div>
+              <span className="text-[10px] font-medium px-2.5 py-1 rounded bg-slate-800 text-slate-300 font-mono">
+                LGD: 45% (Basel III)
+              </span>
+            </div>
+            
+            <div className="overflow-x-auto rounded-lg border border-slate-800/80">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-slate-950/70 border-b border-slate-800 text-slate-400 uppercase font-mono text-[9px] tracking-wider">
+                  <tr>
+                    <th className="py-2.5 px-3">Basel PD Bucket</th>
+                    <th className="py-2.5 px-3 text-right">Debitur (Count)</th>
+                    <th className="py-2.5 px-3 text-right">Porsi (%)</th>
+                    <th className="py-2.5 px-3 text-right">Rata-rata PD (Normal)</th>
+                    <th className="py-2.5 px-3 text-right text-red-400">Stressed PD</th>
+                    <th className="py-2.5 px-3 text-right">EL Rate (Normal)</th>
+                    <th className="py-2.5 px-3 text-right text-red-400">Stressed EL Rate</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {calculatedBuckets.map((row, idx) => {
+                    // Set color based on risk rating
+                    let badgeColor = "text-emerald-450 bg-emerald-500/10";
+                    if (row.bucket.includes("Moderate")) badgeColor = "text-emerald-350 bg-emerald-500/5";
+                    else if (row.bucket.includes("Elevated")) badgeColor = "text-yellow-450 bg-yellow-500/10";
+                    else if (row.bucket.includes("Very high")) badgeColor = "text-red-450 bg-red-500/10";
+                    else if (row.bucket.includes("High risk")) badgeColor = "text-orange-455 bg-orange-500/10";
+                    else if (row.bucket.includes("Default")) badgeColor = "text-rose-500 bg-rose-500/20 font-semibold";
+
+                    return (
+                      <tr key={idx} className="hover:bg-slate-850/40 transition-colors">
+                        <td className="py-2 px-3 font-medium">
+                          <span className={`px-2 py-0.5 rounded text-[10px] ${badgeColor}`}>
+                            {row.bucket}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-right text-slate-200">{row.count.toLocaleString()}</td>
+                        <td className="py-2 px-3 text-right text-slate-400">{row.pct.toFixed(1)}%</td>
+                        <td className="py-2 px-3 text-right text-slate-300">{row.basePD.toFixed(2)}%</td>
+                        <td className="py-2 px-3 text-right text-red-400 font-medium">{row.stressedPD.toFixed(2)}%</td>
+                        <td className="py-2 px-3 text-right text-slate-400">{row.baseELRate.toFixed(2)}%</td>
+                        <td className="py-2 px-3 text-right text-red-400 font-medium">{row.stressedELRate.toFixed(2)}%</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="p-3 bg-slate-900/40 rounded-lg text-[10px] text-slate-400 leading-normal flex gap-2">
+              <HelpCircle className="w-4 h-4 text-primary shrink-0" />
+              <span>
+                <strong>Catatan Analisis Migrasi:</strong> PD Bucket regulasi memetakan debitur UMKM berdasarkan tingkat probabilitas gagal bayar. Ketika terjadi guncangan makro, debitur mengalami kenaikan PD secara eksponensial (risk migration) sehingga bergeser dari bucket risiko rendah ke bucket risiko tinggi, yang melipatgandakan kebutuhan CKPN bank.
+              </span>
+            </div>
           </div>
-          <div className={`p-4 rounded-lg transition-colors ${showStress ? 'bg-red-900/30 border border-red-500/20' : 'bg-slate-800/50'}`}>
-            <p className="text-xs text-slate-400 mb-1">Stressed Expected Loss</p>
-            <p className={`text-xl font-bold ${showStress ? 'text-red-400' : 'text-white'}`}>
-              {formatRupiah(stressedEL)}
-            </p>
-            <p className="text-xs text-slate-500">PD: {stressedPD}%</p>
-          </div>
-          <div className={`p-4 rounded-lg transition-colors ${showStress ? 'bg-red-900/30 border border-red-500/20' : 'bg-slate-800/50'}`}>
-            <p className="text-xs text-slate-400 mb-1">Additional Loss</p>
-            <p className={`text-xl font-bold ${showStress ? 'text-red-400' : 'text-white'}`}>
-              {formatRupiah(additionalLoss)}
-            </p>
-            <p className="text-xs text-slate-500">
-              {showStress ? `+${shockPercent}% dari base` : '0% dari base'}
-            </p>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

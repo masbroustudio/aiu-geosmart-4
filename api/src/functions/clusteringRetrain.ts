@@ -41,8 +41,22 @@ async function manualRetrainHttpHandler(request: HttpRequest, context: Invocatio
       };
     }
 
-    // Execute retraining
-    const result = await rebuildClustersFromDataset();
+    // Parse parameters from request body
+    let k: number | undefined;
+    let method: string | undefined;
+    
+    try {
+      const body = await request.json() as any;
+      if (body) {
+        if (body.k) k = parseInt(body.k, 10);
+        if (body.method) method = body.method;
+      }
+    } catch {
+      // Body may be empty or invalid JSON
+    }
+
+    // Execute retraining with parameters
+    const result = await rebuildClustersFromDataset(k, method);
 
     if (!result.success) {
       return {

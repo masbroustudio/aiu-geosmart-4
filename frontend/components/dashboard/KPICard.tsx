@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { type LucideIcon, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { type LucideIcon, ArrowUpRight, ArrowDownRight, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface KPICardProps {
@@ -12,9 +12,19 @@ interface KPICardProps {
   color?: string;
   trend?: 'up' | 'down' | 'neutral';
   delay?: number;
+  labelTooltip?: string;
 }
 
-export default function KPICard({ icon: Icon, label, value, subtitle, color = '#10B981', trend = 'neutral', delay = 0 }: KPICardProps) {
+export default function KPICard({ 
+  icon: Icon, 
+  label, 
+  value, 
+  subtitle, 
+  color = '#10B981', 
+  trend = 'neutral', 
+  delay = 0,
+  labelTooltip
+}: KPICardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -29,7 +39,17 @@ export default function KPICard({ icon: Icon, label, value, subtitle, color = '#
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-slate-400 mb-1">{label}</p>
+          <div className="flex items-center gap-1 mb-1">
+            <span className="text-sm text-slate-400">{label}</span>
+            {labelTooltip && (
+              <div className="group relative pointer-events-auto">
+                <HelpCircle className="w-3.5 h-3.5 text-slate-500 hover:text-slate-400 cursor-help" />
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 rounded-lg bg-slate-900 border border-slate-800 text-[9.5px] text-slate-300 font-normal shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 leading-normal pointer-events-none">
+                  {labelTooltip}
+                </div>
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <p className="text-2xl font-bold text-white">{value}</p>
             {trend === 'up' && <ArrowUpRight className="w-4 h-4 text-emerald-400" />}

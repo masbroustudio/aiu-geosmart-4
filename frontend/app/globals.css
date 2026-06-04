@@ -213,3 +213,136 @@ body {
 .particle-10 { animation: floatParticle5 28s ease-in-out infinite; animation-delay: -13s; }
 .particle-11 { animation: floatParticle7 17s ease-in-out infinite; animation-delay: -8s; }
 .particle-12 { animation: floatParticle8 24s ease-in-out infinite; animation-delay: -10s; }
+
+/* ==========================================
+   LANDING PAGE LIGHT MODE THEME OVERRIDES
+   ========================================== */
+html.light main,
+html.light section {
+  background-color: #f9fafb !important;
+  color: #1f2937 !important;
+}
+
+html.light h1,
+html.light h2,
+html.light h3,
+html.light h4,
+html.light h5,
+html.light h6 {
+  color: #111827 !important;
+}
+
+html.light p,
+html.light .text-slate-400,
+html.light .text-slate-500,
+html.light .text-slate-300 {
+  color: #4b5563 !important;
+}
+
+html.light .border-slate-800,
+html.light .border-slate-850,
+html.light .border-slate-700,
+html.light .border-slate-900\/60 {
+  border-color: #e5e7eb !important;
+}
+
+/* Background panel overrides */
+html.light .bg-slate-900\/20,
+html.light .bg-slate-950\/50,
+html.light .bg-slate-950\/40,
+html.light .bg-slate-950\/60,
+html.light .bg-slate-900\/10,
+html.light .bg-[#090d16]\/75 {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+html.light .bg-slate-950,
+html.light .bg-slate-900 {
+  background-color: #f3f4f6 !important;
+}
+
+html.light .text-white {
+  color: #111827 !important;
+}
+
+html.light .text-slate-350,
+html.light .text-slate-300,
+html.light .text-slate-200 {
+  color: #374151 !important;
+}
+
+/* Maintain light icons container readability */
+html.light .bg-emerald-500\/10 {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+}
+
+html.light .bg-teal-500\/10 {
+  background-color: rgba(20, 184, 166, 0.12) !important;
+}
+
+html.light .bg-indigo-500\/10 {
+  background-color: rgba(99, 102, 241, 0.12) !important;
+}
+
+html.light .bg-emerald-500\/5,
+html.light .bg-teal-500\/5,
+html.light .bg-indigo-500\/5 {
+  background-color: rgba(243, 244, 246, 0.5) !important;
+}
+
+/* Highlighted elements */
+html.light .bg-gradient-to-r.bg-clip-text {
+  color: transparent !important;
+}
+
+html.light .bg-gradient-to-br.from-emerald-500 {
+  background-image: linear-gradient(to bottom right, #10b981, #0d9488) !important;
+}
+
+html.light .bg-gradient-to-br.from-emerald-500 * {
+  color: #ffffff !important;
+}
+
+html.light .hover\/text-white:hover {
+  color: #111827 !important;
+}
+
+/* Mockup display panel details */
+html.light .bg-slate-950\/60 * {
+  color: #374151 !important;
+}
+
+html.light .bg-slate-950\/60 .text-emerald-400 {
+  color: #059669 !important;
+}
+
+html.light .bg-slate-950\/60 .text-rose-400 {
+  color: #dc2626 !important;
+}
+
+html.light .bg-slate-950\/60 .text-amber-400 {
+  color: #d97706 !important;
+}
+
+html.light .bg-slate-950\/60 .text-blue-400 {
+  color: #2563eb !important;
+}
+
+html.light .bg-slate-950\/60 .text-purple-400 {
+  color: #7c3aed !important;
+}
+
+html.light .bg-slate-950\/60 .bg-slate-900\/80 {
+  background-color: #ffffff !important;
+  border-color: #f3f4f6 !important;
+}
+
+/* Interactive toggles and items */
+html.light .pricing-switcher-active {
+  color: #ffffff !important;
+}
+
+html.light .pricing-period-active {
+  color: #111827 !important;
+}
+

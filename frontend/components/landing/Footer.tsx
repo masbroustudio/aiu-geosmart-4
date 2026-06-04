@@ -40,7 +40,7 @@ export default function Footer() {
             </div>
             <p className="text-sm text-slate-400 leading-relaxed">
               Platform intelijen UMKM berbasis AI untuk mendukung inklusi
-              keuangan dan pengembangan ekonomi di Indonesia.
+              keuangan dan pengembangan ekonomi di Indonesia. Dibangun oleh Yudha Elfransyah.
             </p>
           </div>
 

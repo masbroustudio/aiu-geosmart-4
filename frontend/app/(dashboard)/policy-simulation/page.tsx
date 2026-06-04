@@ -172,6 +172,59 @@ export default function PolicySimulationPage() {
   };
   const timelineData = generateTimelineData();
 
+  // Dynamic simulation for priority kecamatan
+  const simulatedPriorityKecamatan = (() => {
+    if (!policyData || !policyData.priorityKecamatan) return [];
+    
+    const updatedList = policyData.priorityKecamatan.map((item) => {
+      let scoreIncrease = 0;
+      
+      // Calculate score increase based on allocations and totalBudget
+      // allocations array index matches:
+      // index 0: High-Risk Underserved (financial access & digital readiness gaps)
+      // index 1: High-Risk Underserved (4) (infrastructure & financial access gaps)
+      // index 2: Rural Developing (mostly infrastructure gaps)
+      // index 3: Urban Digital Leaders (2) (digital readiness gaps)
+      // index 4: Urban Digital Leaders (digital readiness gaps)
+      
+      if (item.factor === 'digital_readiness') {
+        const pctAllocated = (allocations[3] * 1.2 + allocations[4] * 1.5 + allocations[0] * 0.4);
+        const allocatedBudget = totalBudget * (pctAllocated / 100);
+        const factor = allocatedBudget / 4_000_000_000;
+        scoreIncrease = factor > 0 ? Math.min(30, Math.log1p(factor) * 8.5) : 0;
+      } else if (item.factor === 'infrastructure') {
+        const pctAllocated = (allocations[2] * 1.2 + allocations[1] * 0.8);
+        const allocatedBudget = totalBudget * (pctAllocated / 100);
+        const factor = allocatedBudget / 4_000_000_000;
+        scoreIncrease = factor > 0 ? Math.min(30, Math.log1p(factor) * 9.0) : 0;
+      } else if (item.factor === 'financial_access') {
+        const pctAllocated = (allocations[0] * 1.3 + allocations[1] * 0.7);
+        const allocatedBudget = totalBudget * (pctAllocated / 100);
+        const factor = allocatedBudget / 4_000_000_000;
+        scoreIncrease = factor > 0 ? Math.min(30, Math.log1p(factor) * 9.5) : 0;
+      }
+
+      const overallBudgetFactor = totalBudget / 100_000_000_000;
+      scoreIncrease += overallBudgetFactor * 0.8;
+
+      const simulated_score = Math.min(100, item.avg_skor + scoreIncrease);
+      
+      return {
+        ...item,
+        original_avg_skor: item.avg_skor,
+        avg_skor: simulated_score,
+        score_increase: scoreIncrease,
+        original_rank: item.rank
+      };
+    });
+
+    const sorted = [...updatedList].sort((a, b) => a.avg_skor - b.avg_skor);
+    return sorted.map((item, idx) => ({
+      ...item,
+      rank: idx + 1
+    }));
+  })();
+
   // Actions
   const handleSaveScenario = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -607,24 +660,53 @@ export default function PolicySimulationPage() {
               </tr>
             </thead>
             <tbody>
-              {policyData.priorityKecamatan.map((item, i) => (
-                <tr key={i} className="border-b border-slate-800 hover:bg-slate-800/50">
-                  <td className="py-3 px-4 text-white font-medium">#{item.rank}</td>
-                  <td className="py-3 px-4 text-slate-200">{item.kecamatan}</td>
-                  <td className="py-3 px-4 text-slate-300">{item.kabupaten}</td>
-                  <td className="py-3 px-4 text-right text-red-400 font-medium">{item.avg_skor.toFixed(2)}</td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      item.factor === 'digital_readiness' ? 'bg-blue-500/20 text-blue-400' :
-                      item.factor === 'infrastructure' ? 'bg-amber-500/20 text-amber-400' :
-                      'bg-emerald-500/20 text-emerald-400'
-                    }`}>
-                      {item.factor.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-slate-400 text-xs max-w-[200px] truncate">{item.recommendation}</td>
-                </tr>
-              ))}
+              {simulatedPriorityKecamatan.map((item, i) => {
+                const isImproved = item.score_increase > 0.8;
+                return (
+                  <tr key={i} className="border-b border-slate-800 hover:bg-slate-800/50 transition-colors">
+                    <td className="py-3 px-4 text-white font-medium">
+                      <div className="flex items-center gap-1.5">
+                        <span>#{item.rank}</span>
+                        {item.original_rank !== undefined && item.original_rank !== item.rank && (
+                          <span className={`text-[10px] font-mono font-bold px-1 rounded ${
+                            item.rank < item.original_rank 
+                              ? 'bg-emerald-500/10 text-emerald-400' 
+                              : 'bg-red-500/10 text-red-400'
+                          }`}>
+                            {item.rank < item.original_rank ? `↑${item.original_rank - item.rank}` : `↓${item.rank - item.original_rank}`}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-slate-200 font-semibold">{item.kecamatan}</td>
+                    <td className="py-3 px-4 text-slate-300">{item.kabupaten}</td>
+                    <td className="py-3 px-4 text-right font-medium">
+                      <div className="flex flex-col items-end">
+                        <span className={item.avg_skor > 50 ? 'text-emerald-400' : item.avg_skor > 20 ? 'text-amber-400' : 'text-red-400'}>
+                          {item.avg_skor.toFixed(2)}
+                        </span>
+                        {isImproved && (
+                          <span className="text-[10px] text-emerald-400 font-bold">
+                            +{item.score_increase.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        item.factor === 'digital_readiness' ? 'bg-blue-500/20 text-blue-400' :
+                        item.factor === 'infrastructure' ? 'bg-amber-500/20 text-amber-400' :
+                        'bg-emerald-500/20 text-emerald-400'
+                      }`}>
+                        {item.factor.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-slate-400 text-xs max-w-[200px] truncate" title={item.recommendation}>
+                      {item.recommendation}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
