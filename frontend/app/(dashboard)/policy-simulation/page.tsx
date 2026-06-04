@@ -129,24 +129,6 @@ export default function PolicySimulationPage() {
     return () => clearTimeout(timer);
   }, [allocations, totalBudget, totalPct]);
 
-  // Generate 5-year timeline impact projection data
-  const generateTimelineData = () => {
-    const years = ['Tahun 0', 'Tahun 1', 'Tahun 2', 'Tahun 3', 'Tahun 4', 'Tahun 5'];
-    const baseScore = 61.30;
-    const baseSurvival = 67.99;
-    
-    return years.map((year, idx) => {
-      const multipliers = [0, 0.35, 0.65, 0.82, 0.93, 1.0];
-      const mult = multipliers[idx];
-      return {
-        year,
-        'Skor Potensi': Number((baseScore + avgScoreIncrease * mult).toFixed(2)),
-        'Kelangsungan Hidup %': Number((baseSurvival + (avgScoreIncrease * 0.75) * mult).toFixed(2)),
-      };
-    });
-  };
-  const timelineData = generateTimelineData();
-
   // Derived metrics
   const totalImproved = simulationResults
     ? simulationResults.summary.totalImproved
@@ -171,6 +153,24 @@ export default function PolicySimulationPage() {
           return sum + (allocated / totalBudget) * 15 * cluster.priority_score;
         }, 0) / clusterData.govPriority.length).toFixed(1))
       : 0;
+
+  // Generate 5-year timeline impact projection data
+  const generateTimelineData = () => {
+    const years = ['Tahun 0', 'Tahun 1', 'Tahun 2', 'Tahun 3', 'Tahun 4', 'Tahun 5'];
+    const baseScore = 61.30;
+    const baseSurvival = 67.99;
+    
+    return years.map((year, idx) => {
+      const multipliers = [0, 0.35, 0.65, 0.82, 0.93, 1.0];
+      const mult = multipliers[idx];
+      return {
+        year,
+        'Skor Potensi': Number((baseScore + avgScoreIncrease * mult).toFixed(2)),
+        'Kelangsungan Hidup %': Number((baseSurvival + (avgScoreIncrease * 0.75) * mult).toFixed(2)),
+      };
+    });
+  };
+  const timelineData = generateTimelineData();
 
   // Actions
   const handleSaveScenario = async (e: React.FormEvent) => {

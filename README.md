@@ -63,6 +63,14 @@ Versi **v4.0** membawa platform ini ke tingkat kesiapan produksi (*production-re
 * **Division-by-Zero & Fallback pada Overview API**: Menambahkan penanganan pembagian dengan nol pada overview handler dan mekanisme SQL-to-CSV fallback otomatis jika Postgres offline.
 * **AI Chat Assistant Lokal & Analisis Kontekstual Kecamatan**: Menambahkan interceptor kata kunci kewilayahan/kecamatan prioritas pada API chatbot untuk memberikan wawasan wilayah secara instan saat mode offline.
 
+### 11. 🚀 Pembaruan Terkini & Redesain Premium (SaaS Edition)
+* **Redesain Landing Page Premium**: Transformasi total halaman depan dengan tema gelap (*dark mode*) futuristik, efek bias cahaya (*floating gradient orbs*), animasi pemindaian laser (*scanning laser line*), dan mockup dasbor interaktif (menampilkan peta spasial, grafik SHAP, dan antarmuka obrolan AI).
+* **Billing Switcher & Dynamic Pricing**: Penambahan toggle interaktif bulanan/tahunan (dengan diskon hemat 20%) untuk kalkulasi harga paket lisensi secara dinamis.
+* **Penyelarasan Font Sistem (Inter)**: Penyeragaman font di seluruh platform menggunakan Next.js font loader (`next/font/google`) yang dipetakan ke variabel CSS dan Tailwind CSS (`--font-sans`), menyelesaikan inkonsistensi rendering font antar sistem operasi.
+* **Resolusi Bug TDZ Policy Simulation**: Perbaikan runtime `ReferenceError: Cannot access 'z' before initialization` dengan membenahi urutan inisialisasi variabel metrik turunan sebelum dipanggil di fungsi pembuat data proyeksi *timeline*.
+* **Penyempurnaan UX Location Intelligence**: Restrukturisasi list box kecamatan yang terlalu panjang menjadi filter interaktif berbasis Kabupaten/Kota, serta penambahan popup detail kecamatan ketika elemen kecamatan diklik.
+* **Optimasi LLM Prompting & Fitur AI Workspace Baru**: Pembaharuan sistem prompt chatbot AI Assistant agar lebih cerdas menjawab kebutuhan Bank, Pemerintah, dan Investor (misal: rekomendasi lokasi tekstil), serta implementasi workspace AI baru untuk visualisasi tabel dan grafik data science.
+
 ---
 
 

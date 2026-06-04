@@ -9,7 +9,7 @@ import ScrollProgress from "@/components/landing/ScrollProgress";
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-[var(--background)]">
+    <main className="min-h-screen bg-[#030712]">
       <ScrollProgress />
       <Navbar />
       <HeroSection />

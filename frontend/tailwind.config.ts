@@ -38,7 +38,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["var(--font-sans)", "Inter", "system-ui", "sans-serif"],
       },
       animation: {
         "mesh-gradient": "meshGradient 15s ease infinite",

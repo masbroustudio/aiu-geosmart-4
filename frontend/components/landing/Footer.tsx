@@ -31,10 +31,12 @@ export default function Footer() {
           {/* Brand */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-white" />
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-slate-950 stroke-[2.5]" />
               </div>
-              <span className="text-xl font-bold text-white">GeoUMKM</span>
+              <span className="text-xl font-bold text-white">
+                Geo<span className="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">UMKM</span>
+              </span>
             </div>
             <p className="text-sm text-slate-400 leading-relaxed">
               Platform intelijen UMKM berbasis AI untuk mendukung inklusi
@@ -51,7 +53,7 @@ export default function Footer() {
                   <li key={link.label}>
                     <a
                       href={link.href}
-                      className="text-sm text-slate-400 hover:text-accent hover:translate-x-1 inline-block transition-all duration-200"
+                      className="text-sm text-slate-400 hover:text-emerald-400 hover:translate-x-1 inline-block transition-all duration-200"
                     >
                       {link.label}
                     </a>
