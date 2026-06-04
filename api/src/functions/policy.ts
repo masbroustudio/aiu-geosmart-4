@@ -3,6 +3,7 @@ import {
   getPolicyImpacts,
   getGovPriorityKecamatan,
   getGovPriorityClusters,
+  getWhatIfResults,
 } from "../data/loader.js";
 import { requireAuth } from "../middleware/verifyToken.js";
 import { logAudit, extractRequestInfo } from "../services/audit.js";
@@ -20,6 +21,7 @@ async function getPolicyHandler(request: HttpRequest, context: InvocationContext
     const policyImpacts = getPolicyImpacts();
     const priorityKecamatan = getGovPriorityKecamatan();
     const priorityClusters = getGovPriorityClusters();
+    const whatifScenarios = getWhatIfResults();
 
     const topKecamatan = priorityKecamatan
       .sort((a, b) => a.rank - b.rank)
@@ -54,11 +56,13 @@ async function getPolicyHandler(request: HttpRequest, context: InvocationContext
           policy_impacts: policyImpacts,
           priority_kecamatan: topKecamatan,
           budget_allocation: budgetData,
+          whatif_scenarios: whatifScenarios,
         },
         summary: {
           total_policies: policyImpacts.length,
           total_priority_kecamatan: priorityKecamatan.length,
           total_budget_clusters: priorityClusters.length,
+          total_whatif_scenarios: whatifScenarios.length,
         },
       },
     };

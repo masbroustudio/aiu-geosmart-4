@@ -131,7 +131,37 @@ export async function fetchCredit() {
 }
 
 export async function fetchClusters() {
-  return fetchWithFallback('/api/cluster', clusterData);
+  const data = await fetchWithFallback<any>('/api/cluster', clusterData);
+  if (data && (data.profiles || data.government_priority || data.investment_opportunities)) {
+    return {
+      profiles: (data.profiles || []).map((p: any) => ({
+        id: p.id !== undefined ? p.id : (p.cluster_id !== undefined ? p.cluster_id : 0),
+        name: p.name || p.cluster_name || '',
+        n_umkm: Number(p.n_umkm || 0),
+        avg_score: Number(p.avg_score || p.skor_potensi || 0),
+        infra_score: Number(p.infra_score || p.skor_infrastruktur || 0),
+        digital_pct: Number(p.digital_pct || p.has_digital_presence || 0),
+        survival_rate: Number(p.survival_rate || p.is_survived_3yr || 0),
+        avg_omset: Number(p.avg_omset || p.omset_bulanan || 0),
+        income: Number(p.income || p.income_per_kapita || 0)
+      })),
+      govPriority: (data.government_priority || data.govPriority || []).map((item: any) => ({
+        rank: Number(item.rank || item.priority_rank || 0),
+        cluster: item.cluster || item.cluster_name || '',
+        n_umkm: Number(item.n_umkm || 0),
+        priority_score: Number(item.priority_score || 0),
+        budget_pct: Number(item.budget_pct || item.budget_allocation_pct || 0)
+      })),
+      investment: (data.investment_opportunities || data.investment || []).map((item: any) => ({
+        rank: Number(item.rank || item.investment_rank || 0),
+        cluster: item.cluster || item.cluster_name || '',
+        n_umkm: Number(item.n_umkm || 0),
+        investment_score: Number(item.investment_score || 0),
+        market_size_juta: Number(item.market_size_juta || item.total_market_size_juta || 0)
+      }))
+    };
+  }
+  return clusterData;
 }
 
 export async function fetchRecommendations(params?: { jenis_usaha?: string; kabupaten?: string }) {
@@ -158,7 +188,37 @@ export async function fetchRecommendations(params?: { jenis_usaha?: string; kabu
 }
 
 export async function fetchPolicy() {
-  return fetchWithFallback('/api/policy', policyData);
+  const data = await fetchWithFallback<any>('/api/policy', policyData);
+  if (data && (data.policy_impacts || data.impacts || data.priority_kecamatan || data.whatif_scenarios)) {
+    return {
+      impacts: (data.policy_impacts || data.impacts || []).map((item: any) => ({
+        policy: item.policy || '',
+        target: item.target || item.target_group || '',
+        avgImprovement: Number(item.avgImprovement || item.avg_score_improvement || 0),
+        pctImproved: Number(item.pctImproved || item.pct_improved || 0),
+        newAbove70: Number(item.newAbove70 || item.new_above_70 || 0),
+        additionalSurvivors: Number(item.additionalSurvivors || item.additional_survivors || 0)
+      })),
+      priorityKecamatan: (data.priority_kecamatan || data.priorityKecamatan || []).map((item: any) => ({
+        kecamatan: item.kecamatan || '',
+        kabupaten: item.kabupaten || item.kabupaten_kota || '',
+        avg_skor: Number(item.avg_skor !== undefined ? item.avg_skor : (item.avg_score !== undefined ? item.avg_score : 0)),
+        rank: Number(item.rank || 0),
+        factor: item.factor || item.top_limiting_factor || 'infrastructure',
+        recommendation: item.recommendation || ''
+      })),
+      whatifScenarios: (data.whatif_scenarios || data.whatifScenarios || []).map((s: any) => ({
+        scenario: s.scenario || '',
+        affected: Number(s.affected !== undefined ? s.affected : (s.n_umkm_affected !== undefined ? s.n_umkm_affected : 0)),
+        before: Number(s.before !== undefined ? s.before : (s.avg_score_before !== undefined ? s.avg_score_before : 0)),
+        after: Number(s.after !== undefined ? s.after : (s.avg_score_after !== undefined ? s.avg_score_after : 0)),
+        improvement: Number(s.improvement !== undefined ? s.improvement : (s.avg_improvement !== undefined ? s.avg_improvement : 0)),
+        pct_improved: Number(s.pct_improved || 0),
+        above_70: Number(s.above_70 !== undefined ? s.above_70 : (s.n_now_above_70 !== undefined ? s.n_now_above_70 : 0))
+      }))
+    };
+  }
+  return policyData;
 }
 
 export async function fetchStatus(): Promise<{ dbType: 'mock' | 'postgres'; env: string; version: string }> {
