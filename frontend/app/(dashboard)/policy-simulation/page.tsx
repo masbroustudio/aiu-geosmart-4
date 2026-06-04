@@ -22,6 +22,7 @@ import {
   SavedPolicyScenario 
 } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const RECOMMENDED_ALLOCATIONS = clusterData.govPriority.map(c => c.budget_pct);
 
@@ -40,6 +41,29 @@ export default function PolicySimulationPage() {
   // Simulation Results State
   const [simulationResults, setSimulationResults] = useState<any | null>(null);
   const [simulating, setSimulating] = useState(false);
+
+  // Load scenario from URL hash on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash;
+    if (hash) {
+      const params = new URLSearchParams(hash.substring(1));
+      const allocParam = params.get('alloc');
+      const budgetParam = params.get('budget');
+      if (allocParam) {
+        const parsedAlloc = allocParam.split(',').map(Number);
+        if (parsedAlloc.length === RECOMMENDED_ALLOCATIONS.length && parsedAlloc.every(n => !isNaN(n))) {
+          setAllocations(parsedAlloc);
+        }
+      }
+      if (budgetParam) {
+        const parsedBudget = Number(budgetParam);
+        if (!isNaN(parsedBudget) && parsedBudget > 0) {
+          setTotalBudget(parsedBudget);
+        }
+      }
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,6 +98,13 @@ export default function PolicySimulationPage() {
   // Budget calculations
   const totalPct = allocations.reduce((sum, v) => sum + v, 0);
 
+  // Synchronize scenario state to URL Hash
+  useEffect(() => {
+    if (typeof window !== 'undefined' && totalPct === 100) {
+      window.history.replaceState(null, '', `#alloc=${allocations.join(',')}&budget=${totalBudget}`);
+    }
+  }, [allocations, totalBudget, totalPct]);
+
   // Debounced Simulation Query
   useEffect(() => {
     if (totalPct !== 100) {
@@ -97,6 +128,24 @@ export default function PolicySimulationPage() {
 
     return () => clearTimeout(timer);
   }, [allocations, totalBudget, totalPct]);
+
+  // Generate 5-year timeline impact projection data
+  const generateTimelineData = () => {
+    const years = ['Tahun 0', 'Tahun 1', 'Tahun 2', 'Tahun 3', 'Tahun 4', 'Tahun 5'];
+    const baseScore = 61.30;
+    const baseSurvival = 67.99;
+    
+    return years.map((year, idx) => {
+      const multipliers = [0, 0.35, 0.65, 0.82, 0.93, 1.0];
+      const mult = multipliers[idx];
+      return {
+        year,
+        'Skor Potensi': Number((baseScore + avgScoreIncrease * mult).toFixed(2)),
+        'Kelangsungan Hidup %': Number((baseSurvival + (avgScoreIncrease * 0.75) * mult).toFixed(2)),
+      };
+    });
+  };
+  const timelineData = generateTimelineData();
 
   // Derived metrics
   const totalImproved = simulationResults
@@ -381,6 +430,17 @@ export default function PolicySimulationPage() {
 
           <div className="flex gap-2">
             <button
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  navigator.clipboard.writeText(window.location.href);
+                  addToast("Tautan skenario berhasil disalin ke clipboard!", "success");
+                }
+              }}
+              className="px-4 py-2 bg-accent/10 border border-accent/20 hover:border-accent/40 text-accent hover:text-accent-400 rounded-lg text-xs font-semibold transition-colors"
+            >
+              Salin Tautan Skenario
+            </button>
+            <button
               onClick={() => setAllocations([...RECOMMENDED_ALLOCATIONS])}
               className="px-4 py-2 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-semibold transition-colors"
             >
@@ -417,6 +477,48 @@ export default function PolicySimulationPage() {
           </div>
         </div>
       </div>
+
+      {/* 5-Year Budget Timeline Projection */}
+      {totalPct === 100 && (
+        <div className="glass-card p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-accent" />
+              <h3 className="text-lg font-semibold text-white font-serif">Proyeksi Dampak Anggaran 5 Tahun</h3>
+            </div>
+            <span className="text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 font-bold tracking-wider">ESTIMASI FORECAST</span>
+          </div>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Perkembangan rata-rata Skor Potensi Wilayah dan Tingkat Kelangsungan Hidup UMKM Jawa Barat selama 5 tahun ke depan dengan skema alokasi anggaran saat ini.
+          </p>
+          <div className="w-full h-[280px] mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={timelineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.15}/>
+                    <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorSurvival" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.15}/>
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke="#334155" strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="year" tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                <YAxis domain={['auto', 'auto']} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }}
+                  labelStyle={{ color: '#94a3b8', fontWeight: 'bold' }}
+                />
+                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                <Area type="monotone" name="Skor Potensi" dataKey="Skor Potensi" stroke="#10B981" fillOpacity={1} fill="url(#colorScore)" strokeWidth={2} />
+                <Area type="monotone" name="Kelangsungan Hidup UMKM %" dataKey="Kelangsungan Hidup %" stroke="#3B82F6" fillOpacity={1} fill="url(#colorSurvival)" strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* SECTION: SAVED SCENARIOS */}
       {savedScenarios.length > 0 && (

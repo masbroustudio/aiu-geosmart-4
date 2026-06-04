@@ -175,12 +175,21 @@ export async function fetchRecommendations(params?: { jenis_usaha?: string; kabu
     const first = data[0] as Record<string, unknown>;
     if ('kabupaten_kota' in first || 'avg_skor_potensi' in first) {
       return data.map((item: Record<string, unknown>) => ({
+        ...item,
         kabupaten: (item.kabupaten_kota || item.kabupaten || '') as string,
         kecamatan: (item.kecamatan || '') as string,
         jenis_usaha: (item.jenis_usaha || '') as string,
         avg_score: (item.avg_skor_potensi || item.avg_score || 0) as number,
         rank: (item.rank || 0) as number,
         explanation: (item.explanation || '') as string,
+        populasi: Number(item.populasi || 0),
+        competitorCount: Number(item.competitorCount || item.avg_kompetitor || 0),
+        market_gap_score: Number(item.market_gap_score || 0),
+        avg_infrastruktur: Number(item.avg_infrastruktur || 0),
+        avg_internet: Number(item.avg_internet || 0),
+        avg_financial_access: Number(item.avg_financial_access || 0),
+        survival_rate: Number(item.survival_rate || 0),
+        competition_inv: Number(item.competition_inv || 0),
       })) as typeof recommendData;
     }
   }
@@ -223,6 +232,16 @@ export async function fetchPolicy() {
 
 export async function fetchStatus(): Promise<{ dbType: 'mock' | 'postgres'; env: string; version: string }> {
   return fetchWithFallback('/api/status', { dbType: 'mock', env: 'development', version: '4.0.0' });
+}
+
+export async function retrainClustering(params?: { k?: number; method?: string }) {
+  // Retrain clustering endpoint: /api/developer/clustering/retrain
+  // If the server requires POST, we pass POST. It is an admin tool.
+  const res = await fetchWithFallback<any>('/api/developer/clustering/retrain', { success: false, error: 'Failed' }, {
+    method: 'POST',
+    body: JSON.stringify(params || {}),
+  });
+  return res;
 }
 
 export interface DeveloperKey {

@@ -33,40 +33,35 @@ Versi **v4.0** membawa platform ini ke tingkat kesiapan produksi (*production-re
 * Halaman **Settings** kini dilengkapi modul pembuatan, penayangan, dan pencabutan (revoke) **Developer API Keys** yang aman (disimpan di DB dengan enkripsi SHA-256).
 * Dilengkapi dengan bypass interseptor header Azure Static Web Apps menggunakan header kustom `X-Custom-Authorization` pada middleware backend untuk otentikasi JWT dan validasi `X-API-Key`.
 
-### 4. 📈 Penyimpanan Skenario Simulasi Kebijakan
-* Pengguna dapat menyimpan, memberi nama, memuat kembali (load), dan menghapus riwayat skenario alokasi anggaran daerah yang telah dirancang langsung ke database PostgreSQL/Mock.
+### 4. 📊 Credit Scoring Interaktif & SHAP Explainable AI (XAI)
+* Kalkulator ML interaktif di halaman **Credit Scoring** untuk menghitung skor kredit UMKM (300-850), rating, dan PD secara instan menggunakan model XGBoost.
+* Dilengkapi visualisasi **SHAP (Shapley Additive exPlanations)** dinamis berbasis Recharts Waterfall Chart untuk menjelaskan kontribusi positif/negatif dari setiap fitur terhadap baseline score.
 
-### 5. 🔮 Simulasi Geospasial Berbasis Model ML di Backend
-* Kalkulasi simulasi anggaran daerah kini dijalankan di backend (`POST /api/policy/simulate`).
-* Menghasilkan prediksi peningkatan skor potensi per kecamatan secara dinamis dan non-linear berdasarkan hukum *diminishing returns* (kurva logaritma) menggunakan bobot target potensi masing-masing klaster.
+### 5. 📈 Simulator Stress Test Portofolio Dinamis & Cohort Analysis
+* Slider kejutan makroekonomi (Inflasi Jabar, BI-Rate, dan Pertumbuhan PDRB Sektor) yang interaktif untuk menguji ketahanan portofolio bank menggunakan persamaan shock default non-linear eksponensial.
+* Ditunjang dengan **Grafik Kohor Portofolio (Portfolio Cohort LineChart)** berbasis usia bisnis untuk memantau tren NPL secara berkelanjutan.
 
-### 6. 📥 Ingestion Pipeline Asinkron (Simulasi Background Job Queue)
+### 6. 🗺️ Lokasi Intelijen: Custom MCDA & Deteksi Market Gap
+* Fitur **Custom Multi-Criteria Decision Analysis (MCDA)** dengan 5 slider bobot preferensi (Infrastruktur, Digital, Finansial, Kompetisi, dan Kelangsungan Hidup) untuk menghitung skor kelayakan wilayah secara real-time.
+* Fitur **Deteksi Market Gap Spasial** berbasis rasio populasi dan kompetitor per kecamatan untuk memetakan pasar tersembunyi berpotensi tinggi secara otomatis.
+
+### 7. 🔮 Pelatihan Ulang Klaster & Radar Profiling Segmentasi
+* Ditambahkan grafik **Radar Profiling Segmentasi** 6-dimensi untuk membandingkan performa antar segmen klaster UMKM.
+* UI **Pelatihan Ulang Model** yang dinamis (K-Means Centroids & DBSCAN Spatial) untuk memetakan ulang segmentasi 10.000 data UMKM langsung di backend server ML.
+
+### 8. 🔮 Proyeksi Kebijakan 5 Tahun & Berbagi URL Hash Skenario
+* Visualisasi **Proyeksi Dampak Anggaran 5 Tahun** berbasis AreaChart untuk meramal kelangsungan hidup UMKM dan skor potensi di bawah simulasi budget saat ini.
+* Sinkronisasi hash URL dinamis (`#alloc=...&budget=...`) dan tombol salin tautan instan memudahkan pengguna membagikan skenario simulasi kebijakan.
+
+### 9. 📥 Ingestion Pipeline Asinkron (Simulasi Background Job Queue)
 * Pengunggahan file CSV batch berukuran besar dipindahkan ke backend secara asinkron (`POST /api/reports/batch-score/upload`) dengan antrean latar belakang (*background job queue*).
 * Menghindari browser *freeze* (macet) pada berkas >50.000 baris dengan memproses data dalam pecahan (*chunks*), serta dilengkapi *polling status* dan antarmuka progres persentase secara real-time pada UI laporan.
 
-### 7. ⏱️ Dynamic Clustering Retraining Scheduler
-* Mengimplementasikan penjadwal (Azure Functions Timer Trigger) dan API manual pengembang (`POST /api/developer/clustering/retrain`) yang melatih kembali sentroid K-Means dan DBSCAN pada tabel basis data ketika ada penambahan UMKM baru secara signifikan.
-
-### 8. 📊 Credit Scoring Interaktif & SHAP Explainable AI (XAI)
-* Kalkulator ML interaktif di halaman **Credit Scoring** untuk menghitung skor kredit UMKM (300-850), rating, dan PD secara instan menggunakan model XGBoost.
-* Dilengkapi visualisasi **SHAP (Shapley Additive exPlanations)** dinamis untuk menjelaskan faktor apa saja yang menaikkan atau menurunkan skor kredit tersebut.
-
-### 9. 📈 Simulator Stress Test Portofolio Dinamis
-* Slider kejutan makroekonomi (NPL Shock Range Slider) yang interaktif untuk menguji ketahanan portofolio bank terhadap guncangan ekonomi secara dinamis.
-
-### 10. 🗺️ Peta Kepadatan Spasial (Heatmap) & Legenda Interaktif
-* Peta spasial sebaran kecamatan dengan mode visualisasi ganda (**Pin Standard** dan **Heatmap Density**) serta legenda interaktif yang berfungsi sebagai filter koordinat secara real-time pada peta.
-* Integrasi *What-If Simulator* Location Intelligence langsung ke backend endpoint `/api/whatif`.
-
-### 12. 🛠️ Perbaikan Path File & Penanganan Error Autentikasi pada Azure SWA
-* **Lokalisasi Data SWA**: Memindahkan dan menyinkronkan seluruh dataset (`.csv` dan `.json`) ke direktori `api/data/` agar dikemas dan dideploy secara utuh oleh Azure Static Web Apps (karena folder `ml/data/` di luar root API tidak dikemas saat deploy).
-* **Path Resolution Fallback**: Memperbarui utility path resolution agar mendahulukan pencarian file di `api/data` lokal sebelum melakukan *fallback* ke `ml/data` untuk menjaga kompatibilitas eksekusi lokal (`func start`) dan Azure serverless.
-* **Koreksi Status HTTP Autentikasi**: Memperbaiki pengecekan status autentikasi di catch block seluruh handler API (25 file handler) dari pengecekan kaku `error.message === 'Unauthorized'` menjadi `error.message.startsWith('Unauthorized')` agar jika token JWT tidak valid/kedaluwarsa, API mengembalikan kode status kustom `401 Unauthorized` dengan benar, alih-alih mengalami crash dengan status `500 Internal Server Error`.
-* **Pencegahan Race Condition Database (Cold-Start Query Lock)**: Mengimplementasikan mekanisme transparent query lock untuk mencegah race condition pada SWA cold start, di mana query API berjalan mendahului selesainya proses inisialisasi skema basis data PostgreSQL dan pengisian data (auto-seeding).
-* **Penyelarasan Key Mapping Credit Score Bands & PD Regulatory Buckets**: Memetakan properti berhuruf besar dari parser CSV (seperti `Rating`, `Score Range`, `Count`, `Pct of Portfolio`, dll.) ke properti berhuruf kecil/snake_case yang diharapkan oleh frontend, baik di sisi backend API (`api/src/functions/credit.ts`) maupun di sisi frontend parser (`frontend/lib/api.ts`). Ini memperbaiki masalah data kosong pada tabel "Credit Score Bands Portfolio" dan hilangnya visualisasi grafik "Distribution by Band" setelah kelaikan kredit selesai dihitung.
-* **Mekanisme SQL-to-CSV Fallback & Penanganan Division-by-Zero pada Overview API**: Menambahkan blok `try-catch` di dalam data loader (`getUmkmData` dan `getUmkmClusteredData` pada `api/src/data/loader.ts`) serta penanganan pembagian dengan nol pada overview handler (`api/src/functions/overview.ts`). Ini menjamin bahwa jika ada kegagalan koneksi database PostgreSQL atau tabel database belum terisi, API `/api/overview` akan otomatis beralih memuat data dari berkas CSV lokal secara transparan tanpa mengembalikan status error 500.
-* **AI Chat Assistant Lokal & Analisis Kontekstual Kecamatan**: Menambahkan interceptor kata kunci kewilayahan/kecamatan prioritas (seperti Sagaranten, Cisompet, Cihurip, Kuningan, dll.) serta kata kunci aplikasi ("geo umkm smart" dan "notebook") pada API obrolan chatbot (`api/src/functions/chat.ts`). Ini memungkinkan asisten AI memberikan analisis profil wilayah, peringkat prioritas daerah, skor potensi, faktor pembatas utama, rekomendasi intervensi, serta wawasan segmentasi klaster ML secara instan dan akurat bahkan saat dalam mode fallback lokal tanpa API Key LLM eksternal.
-* **Penyelarasan Data Obrolan AI (Bank, Government, Investor Mode)**: Menyelaraskan seluruh metrik statistik pada bot AI asisten (baik tool calling backend maupun fallback frontend) agar konsisten dengan dataset 10.000 UMKM Jawa Barat, total eksposur kredit perbankan Rp 585 Miliar, average PD 43,2%, dan Expected Loss Rp 175,5 Miliar.
+### 10. 🛠️ Perbaikan Path File & Penanganan Error Autentikasi pada Azure SWA
+* **Lokalisasi Data SWA**: Memindahkan dan menyinkronkan seluruh dataset (`.csv` dan `.json`) ke direktori `api/data/` agar dikemas dan dideploy secara utuh oleh Azure Static Web Apps.
+* **Koreksi Status HTTP Autentikasi**: Memperbaiki pengecekan status autentikasi di catch block seluruh handler API agar mengembalikan kode status kustom `401 Unauthorized` dengan benar.
+* **Division-by-Zero & Fallback pada Overview API**: Menambahkan penanganan pembagian dengan nol pada overview handler dan mekanisme SQL-to-CSV fallback otomatis jika Postgres offline.
+* **AI Chat Assistant Lokal & Analisis Kontekstual Kecamatan**: Menambahkan interceptor kata kunci kewilayahan/kecamatan prioritas pada API chatbot untuk memberikan wawasan wilayah secara instan saat mode offline.
 
 ---
 

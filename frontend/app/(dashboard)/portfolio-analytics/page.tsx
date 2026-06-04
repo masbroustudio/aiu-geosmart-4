@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Users, DollarSign, TrendingDown, AlertTriangle } from 'lucide-react';
 import KPICard from '@/components/dashboard/KPICard';
 import DownloadCSVButton from '@/components/ui/DownloadCSVButton';
@@ -56,12 +56,40 @@ export default function PortfolioAnalyticsPage() {
   }
 
   const baseEL = portfolioData.stressTest.baseExpectedLoss;
-  const stressedEL = showStress ? baseEL * (1 + shockPercent / 100) : baseEL;
-  const additionalLoss = stressedEL - baseEL;
   const basePD = portfolioData.weightedAvgPD;
+
+  // Base Macro variables
+  const baseBiRate = 6.00;
+  const baseInflation = 2.80;
+  const basePdrbGrowth = 5.20;
+
+  // Stressed Macro variables (Shock response based on slider)
+  const biRate = baseBiRate + (shockPercent / 100) * 4.0; 
+  const inflation = baseInflation + (shockPercent / 100) * 5.2; 
+  const pdrbGrowth = basePdrbGrowth - (shockPercent / 100) * 6.0; 
+
+  // Non-linear PD factor (exponential shock combining rate hikes, inflation, and contraction)
+  const biRateShock = (biRate - baseBiRate) / 100;
+  const inflationShock = (inflation - baseInflation) / 100;
+  const pdrbShock = (basePdrbGrowth - pdrbGrowth) / 100;
+  const shockMultiplier = Math.exp(2.2 * biRateShock + 1.8 * inflationShock + 2.5 * pdrbShock);
+
   const stressedPD = showStress 
-    ? parseFloat(Math.min(100, basePD * (1 + shockPercent / 100)).toFixed(1)) 
+    ? parseFloat(Math.min(100, basePD * shockMultiplier).toFixed(2)) 
     : basePD;
+
+  const stressedEL = showStress 
+    ? baseEL * (stressedPD / basePD) 
+    : baseEL;
+
+  const additionalLoss = stressedEL - baseEL;
+
+  // Cohort NPL data
+  const cohortData = [
+    { name: '12 Bulan', 'Cohort 2023': 1.20, 'Cohort 2024': 1.45, 'Cohort 2025': 1.80 },
+    { name: '24 Bulan', 'Cohort 2023': 2.80, 'Cohort 2024': 3.20 },
+    { name: '36 Bulan', 'Cohort 2023': 4.50 },
+  ];
 
   return (
     <div className="space-y-6 mt-12 lg:mt-0">
@@ -170,30 +198,58 @@ export default function PortfolioAnalyticsPage() {
         </div>
       </div>
 
-      {/* HHI & Diversification */}
-      <div className="glass-card p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Indeks Konsentrasi & Diversifikasi</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <p className="text-sm text-slate-400 mb-2">Herfindahl-Hirschman Index (HHI)</p>
-            <p className="text-3xl font-bold text-white">{portfolioData.hhi.toLocaleString()}</p>
-            <p className="text-xs text-slate-500 mt-1">
-              {'< 1500 = Rendah | 1500-2500 = Moderat | > 2500 = Tinggi'}
-            </p>
-            <span className="inline-block mt-2 px-2 py-1 text-xs font-medium rounded bg-yellow-500/20 text-yellow-400">
-              Konsentrasi Moderat
-            </span>
+      {/* Cohort Analysis & HHI Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Cohort Analysis Chart */}
+        <div className="glass-card p-6">
+          <h3 className="text-lg font-semibold text-white mb-2">Analisis Kohor Portofolio (NPL %)</h3>
+          <p className="text-xs text-slate-400 mb-4">Pelacakan performa kualitas kredit berdasarkan tahun realisasi kredit pembiayaan.</p>
+          <div className="h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={cohortData} margin={{ top: 5, right: 30, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} unit="%" />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
+                  labelStyle={{ color: '#f1f5f9' }}
+                />
+                <Legend wrapperStyle={{ fontSize: '11px' }} />
+                <Line type="monotone" dataKey="Cohort 2023" stroke="#10B981" strokeWidth={2.5} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="Cohort 2024" stroke="#3B82F6" strokeWidth={2.5} />
+                <Line type="monotone" dataKey="Cohort 2025" stroke="#EF4444" strokeWidth={2.5} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
+        </div>
+
+        {/* HHI & Diversification */}
+        <div className="glass-card p-6 flex flex-col justify-between">
           <div>
-            <p className="text-sm text-slate-400 mb-2">Skor Diversifikasi</p>
-            <p className="text-3xl font-bold text-white">{portfolioData.diversificationScore}<span className="text-lg text-slate-400">/100</span></p>
-            <div className="mt-3 w-full bg-slate-700 rounded-full h-3">
-              <div
-                className="h-3 rounded-full bg-gradient-to-r from-red-500 via-yellow-500 to-emerald-500"
-                style={{ width: `${portfolioData.diversificationScore}%` }}
-              />
+            <h3 className="text-lg font-semibold text-white mb-4">Indeks Konsentrasi & Diversifikasi</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <p className="text-sm text-slate-400 mb-2">Herfindahl-Hirschman Index (HHI)</p>
+                <p className="text-3xl font-bold text-white">{portfolioData.hhi.toLocaleString()}</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {'< 1500 = Rendah | 1500-2500 = Moderat | > 2500 = Tinggi'}
+                </p>
+                <span className="inline-block mt-2 px-2 py-1 text-xs font-medium rounded bg-yellow-500/20 text-yellow-400">
+                  Konsentrasi Moderat
+                </span>
+              </div>
+              <div>
+                <p className="text-sm text-slate-400 mb-2">Skor Diversifikasi</p>
+                <p className="text-3xl font-bold text-white">{portfolioData.diversificationScore}<span className="text-lg text-slate-400">/100</span></p>
+                <div className="mt-3 w-full bg-slate-700 rounded-full h-3">
+                  <div
+                    className="h-3 rounded-full bg-gradient-to-r from-red-500 via-yellow-500 to-emerald-500"
+                    style={{ width: `${portfolioData.diversificationScore}%` }}
+                  />
+                </div>
+                <p className="text-xs text-slate-500 mt-1 font-medium">Semakin tinggi semakin terdiversifikasi</p>
+              </div>
             </div>
-            <p className="text-xs text-slate-500 mt-1">Semakin tinggi semakin terdiversifikasi</p>
           </div>
         </div>
       </div>
@@ -267,26 +323,66 @@ export default function PortfolioAnalyticsPage() {
         </div>
 
         {showStress && (
-          <div className="p-4 rounded-xl bg-slate-950 border border-slate-900 space-y-2">
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-400 font-semibold">Tingkat Goncangan Makroekonomi:</span>
-              <span className="text-red-400 font-bold">+{shockPercent}% (Kenaikan NPL)</span>
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl bg-slate-950 border border-slate-900 space-y-3">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-400 font-semibold">Tingkat Goncangan Makroekonomi:</span>
+                <span className="text-red-400 font-bold">+{shockPercent}% (Kenaikan NPL)</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={shockPercent}
+                onChange={(e) => setShockPercent(parseInt(e.target.value) || 0)}
+                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-500"
+              />
+              <div className="flex justify-between text-[9px] text-slate-500 font-mono">
+                <span>0% (Normal)</span>
+                <span>25% (Ringan)</span>
+                <span>50% (Sedang)</span>
+                <span>75% (Berat)</span>
+                <span>100% (Kritis)</span>
+              </div>
             </div>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="5"
-              value={shockPercent}
-              onChange={(e) => setShockPercent(parseInt(e.target.value) || 0)}
-              className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-500"
-            />
-            <div className="flex justify-between text-[9px] text-slate-500 font-mono">
-              <span>0% (Normal)</span>
-              <span>25% (Ringan)</span>
-              <span>50% (Sedang)</span>
-              <span>75% (Berat)</span>
-              <span>100% (Kritis)</span>
+
+            {/* Macroeconomic Indicators Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-3 bg-slate-950 border border-slate-900 rounded-xl flex flex-col justify-between">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">BI-Rate</span>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-base font-extrabold text-red-400">{biRate.toFixed(2)}%</span>
+                  {shockPercent > 0 && (
+                    <span className="text-[9px] text-red-500">+{((biRate - baseBiRate)).toFixed(2)}%</span>
+                  )}
+                </div>
+                <span className="text-[9px] text-slate-500 mt-1">Suku bunga acuan bank sentral</span>
+              </div>
+
+              <div className="p-3 bg-slate-950 border border-slate-900 rounded-xl flex flex-col justify-between">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Inflasi Jawa Barat</span>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-base font-extrabold text-red-400">{inflation.toFixed(2)}%</span>
+                  {shockPercent > 0 && (
+                    <span className="text-[9px] text-red-500">+{((inflation - baseInflation)).toFixed(2)}%</span>
+                  )}
+                </div>
+                <span className="text-[9px] text-slate-500 mt-1">Kenaikan harga barang tahunan</span>
+              </div>
+
+              <div className="p-3 bg-slate-950 border border-slate-900 rounded-xl flex flex-col justify-between">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">PDRB Growth (Sektor Utama)</span>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className={`text-base font-extrabold ${pdrbGrowth < 0 ? 'text-red-500' : 'text-emerald-400'}`}>
+                    {pdrbGrowth.toFixed(2)}%
+                  </span>
+                  {shockPercent > 0 && (
+                    <span className="text-[9px] text-red-500">-{((basePdrbGrowth - pdrbGrowth)).toFixed(2)}%</span>
+                  )}
+                </div>
+                <span className="text-[9px] text-slate-500 mt-1">Pertumbuhan ekonomi regional</span>
+              </div>
             </div>
           </div>
         )}

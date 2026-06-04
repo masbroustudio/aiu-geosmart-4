@@ -1,5 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { getRecommendations } from "../data/loader.js";
+import { getRecommendations, getKecamatanData } from "../data/loader.js";
 import { requireAuth } from "../middleware/verifyToken.js";
 import { logAudit, extractRequestInfo } from "../services/audit.js";
 
@@ -31,8 +31,36 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
       );
     }
 
+    // Load kecamatan reference data for population and competitor count enrichment
+    const kecamatanRef = getKecamatanData();
+    const kecMap = new Map();
+    for (const k of kecamatanRef) {
+      const key = `${k.kabupaten_kota.toLowerCase()}|${k.kecamatan.toLowerCase()}`;
+      kecMap.set(key, k);
+    }
+
+    // Enrich items
+    const enriched = data.map((item) => {
+      const key = `${item.kabupaten_kota.toLowerCase()}|${item.kecamatan.toLowerCase()}`;
+      const ref = kecMap.get(key);
+      
+      const populasi = ref ? ref.populasi : 50000;
+      const competitorCount = ref ? ref.jumlah_kompetitor_radius_3km : item.avg_kompetitor;
+      const market_gap_score = populasi / (competitorCount + 1);
+
+      return {
+        ...item,
+        populasi,
+        competitorCount,
+        market_gap_score,
+        avg_infrastruktur: item.avg_infrastruktur || (ref ? ref.skor_infrastruktur : 50),
+        avg_internet: item.avg_internet || (ref ? ref.akses_internet_pct : 50),
+        avg_financial_access: item.avg_financial_access || (ref ? ref.penetrasi_kur_pct : 0.5),
+      };
+    });
+
     // Sort by recommendation_score desc
-    const sorted = [...data].sort((a, b) => b.recommendation_score - a.recommendation_score);
+    const sorted = [...enriched].sort((a, b) => b.recommendation_score - a.recommendation_score);
     const results = sorted.slice(0, limit);
 
     await logAudit({
