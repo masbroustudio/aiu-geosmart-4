@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import Papa from "papaparse";
+import { query, getPool } from "../db/pool.js";
 import {
   UmkmRecord,
   UmkmClusteredRecord,
@@ -126,20 +127,95 @@ function parseKecamatanRecord(raw: Record<string, string>): KecamatanRecord {
   };
 }
 
-export function getUmkmData(): UmkmRecord[] {
-  if (!umkmData) {
-    const raw = loadCSV<Record<string, string>>("umkm_dataset.csv");
-    umkmData = raw.map(parseUmkmRecord);
+export async function getUmkmData(): Promise<UmkmRecord[]> {
+  const isMock = getPool().mock;
+  if (isMock) {
+    if (!umkmData) {
+      const raw = loadCSV<Record<string, string>>("umkm_dataset.csv");
+      umkmData = raw.map(parseUmkmRecord);
+    }
+    return umkmData;
   }
-  return umkmData;
+
+  const res = await query("SELECT * FROM umkm_dataset ORDER BY id");
+  return res.rows.map((row: any) => ({
+    kabupaten_kota: row.kabupaten_kota,
+    kecamatan: row.kecamatan,
+    latitude: Number(row.latitude),
+    longitude: Number(row.longitude),
+    is_kota: Boolean(row.is_kota),
+    jenis_usaha: row.jenis_usaha,
+    tahun_berdiri: Number(row.tahun_berdiri),
+    jumlah_karyawan: Number(row.jumlah_karyawan),
+    has_digital_presence: Number(row.has_digital_presence),
+    omset_bulanan: Number(row.omset_bulanan),
+    populasi: Number(row.populasi),
+    kepadatan_penduduk: Number(row.kepadatan_penduduk),
+    income_per_kapita: Number(row.income_per_kapita),
+    jarak_ke_jalan_utama: Number(row.jarak_ke_jalan_utama),
+    jarak_ke_pasar: Number(row.jarak_ke_pasar),
+    akses_internet_pct: Number(row.akses_internet_pct),
+    skor_infrastruktur: Number(row.skor_infrastruktur),
+    jumlah_kompetitor_radius_3km: Number(row.jumlah_kompetitor_radius_3km),
+    jarak_ke_bank_terdekat: Number(row.jarak_ke_bank_terdekat),
+    penetrasi_kur_pct: Number(row.penetrasi_kur_pct),
+    risiko_banjir: Number(row.risiko_banjir),
+    risiko_gempa: Number(row.risiko_gempa),
+    skor_potensi: Number(row.skor_potensi),
+    is_survived_3yr: Number(row.is_survived_3yr),
+  }));
 }
 
-export function getUmkmClusteredData(): UmkmClusteredRecord[] {
-  if (!umkmClusteredData) {
-    const raw = loadCSV<Record<string, string>>("umkm_clustered.csv");
-    umkmClusteredData = raw.map(parseUmkmClusteredRecord);
+export async function getUmkmClusteredData(): Promise<UmkmClusteredRecord[]> {
+  const isMock = getPool().mock;
+  if (isMock) {
+    if (!umkmClusteredData) {
+      const raw = loadCSV<Record<string, string>>("umkm_clustered.csv");
+      umkmClusteredData = raw.map(parseUmkmClusteredRecord);
+    }
+    return umkmClusteredData;
   }
-  return umkmClusteredData;
+
+  const res = await query("SELECT * FROM umkm_clustered ORDER BY id");
+  return res.rows.map((row: any) => ({
+    kabupaten_kota: row.kabupaten_kota,
+    kecamatan: row.kecamatan,
+    latitude: Number(row.latitude),
+    longitude: Number(row.longitude),
+    is_kota: Boolean(row.is_kota),
+    jenis_usaha: row.jenis_usaha,
+    tahun_berdiri: Number(row.tahun_berdiri),
+    jumlah_karyawan: Number(row.jumlah_karyawan),
+    has_digital_presence: Number(row.has_digital_presence),
+    omset_bulanan: Number(row.omset_bulanan),
+    populasi: Number(row.populasi),
+    kepadatan_penduduk: Number(row.kepadatan_penduduk),
+    income_per_kapita: Number(row.income_per_kapita),
+    jarak_ke_jalan_utama: Number(row.jarak_ke_jalan_utama),
+    jarak_ke_pasar: Number(row.jarak_ke_pasar),
+    akses_internet_pct: Number(row.akses_internet_pct),
+    skor_infrastruktur: Number(row.skor_infrastruktur),
+    jumlah_kompetitor_radius_3km: Number(row.jumlah_kompetitor_radius_3km),
+    jarak_ke_bank_terdekat: Number(row.jarak_ke_bank_terdekat),
+    penetrasi_kur_pct: Number(row.penetrasi_kur_pct),
+    risiko_banjir: Number(row.risiko_banjir),
+    risiko_gempa: Number(row.risiko_gempa),
+    skor_potensi: Number(row.skor_potensi),
+    is_survived_3yr: Number(row.is_survived_3yr),
+    business_maturity: Number(row.business_maturity),
+    infra_x_income: Number(row.infra_x_income),
+    competition_density_ratio: Number(row.competition_density_ratio),
+    avg_distance_to_facilities: Number(row.avg_distance_to_facilities),
+    market_gap_score: Number(row.market_gap_score),
+    digital_readiness_index: Number(row.digital_readiness_index),
+    risk_composite: Number(row.risk_composite),
+    financial_access_score: Number(row.financial_access_score),
+    omset_per_karyawan: Number(row.omset_per_karyawan),
+    location_advantage: Number(row.location_advantage),
+    cluster_kmeans: Number(row.cluster_kmeans),
+    cluster_dbscan: Number(row.cluster_dbscan),
+    cluster_name: row.cluster_name || "",
+  }));
 }
 
 export function getKecamatanData(): KecamatanRecord[] {

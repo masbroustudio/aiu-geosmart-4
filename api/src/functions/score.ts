@@ -17,7 +17,7 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
     const jenisUsaha = request.query.get("jenis_usaha") || undefined;
     const limit = parseInt(request.query.get("limit") || "20", 10);
 
-    let data = getUmkmData();
+    let data = await getUmkmData();
 
     if (kabupaten) {
       data = data.filter(

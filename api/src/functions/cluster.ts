@@ -46,7 +46,7 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
       }
 
       // Get member UMKMs from clustered data
-      const clusteredData = getUmkmClusteredData();
+      const clusteredData = await getUmkmClusteredData();
       const members = clusteredData.filter(
         (item) => item.cluster_kmeans === clusterId
       );

@@ -3,6 +3,7 @@ import * as jwt from 'jsonwebtoken';
 import { getUserById } from '../db/users';
 import { getPool } from '../db/pool';
 import { createHash } from 'crypto';
+import { getApiKeyByHash } from '../db/keys.js';
  
 export interface AuthContext {
   userId: number;
@@ -15,13 +16,51 @@ export const verifyToken = async (
   context: InvocationContext
 ): Promise<AuthContext | null> => {
   try {
+    // Check if API Key authentication is used
+    const apiKey = 
+      request.headers.get('X-API-Key') || 
+      request.headers.get('x-api-key');
+
+    if (apiKey) {
+      const keyHash = createHash('sha256').update(apiKey).digest('hex');
+      const keyRecord = await getApiKeyByHash(keyHash);
+      if (!keyRecord || !keyRecord.is_active) {
+        throw new Error('Invalid or inactive API Key');
+      }
+
+      let user = await getUserById(keyRecord.user_id);
+      
+      // Auto-reconstruct user in mock mode to survive serverless container recycles
+      if (!user && getPool().mock) {
+        user = {
+          id: keyRecord.user_id,
+          email: `developer_${keyRecord.user_id}@mock.local`,
+          role: keyRecord.role || 'viewer',
+          is_active: true,
+          created_at: new Date(),
+          updated_at: new Date()
+        };
+      }
+
+      if (!user) {
+        throw new Error(`User associated with API Key (${keyRecord.user_id}) not found`);
+      }
+
+      return {
+        userId: user.id,
+        email: user.email,
+        role: keyRecord.role || user.role,
+      };
+    }
+
+    // Fallback to Bearer JWT token authentication
     const authHeader = 
       request.headers.get('X-Custom-Authorization') || 
       request.headers.get('x-custom-authorization') || 
       request.headers.get('Authorization') || 
       request.headers.get('authorization');
     if (!authHeader) {
-      throw new Error('Authorization header not found');
+      throw new Error('Authorization header not found (must be Bearer Token or X-API-Key)');
     }
  
     const parts = authHeader.split(' ');

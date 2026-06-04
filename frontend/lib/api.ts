@@ -135,6 +135,76 @@ export async function fetchPolicy() {
   return fetchWithFallback('/api/policy', policyData);
 }
 
+export async function fetchStatus(): Promise<{ dbType: 'mock' | 'postgres'; env: string; version: string }> {
+  return fetchWithFallback('/api/status', { dbType: 'mock', env: 'development', version: '4.0.0' });
+}
+
+export interface DeveloperKey {
+  id: number;
+  user_id: number;
+  key_hash: string;
+  role: string;
+  rate_limit: number;
+  is_active: boolean;
+  created_at: string;
+  raw_key?: string;
+}
+
+export async function fetchDeveloperKeys(): Promise<DeveloperKey[]> {
+  return fetchWithFallback<DeveloperKey[]>('/api/developer/keys', []);
+}
+
+export async function createDeveloperKey(): Promise<DeveloperKey | null> {
+  if (!BASE_URL) return null;
+  try {
+    const res = await fetch(`${BASE_URL}/api/developer/keys`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    
+    if (res.status === 401) {
+      clearAuthToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('unauthorized'));
+      }
+      return null;
+    }
+    
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json.success && json.data) {
+      return json.data as DeveloperKey;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteDeveloperKey(id: number): Promise<boolean> {
+  if (!BASE_URL) return false;
+  try {
+    const res = await fetch(`${BASE_URL}/api/developer/keys?id=${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    
+    if (res.status === 401) {
+      clearAuthToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('unauthorized'));
+      }
+      return false;
+    }
+    
+    if (!res.ok) return false;
+    const json = await res.json();
+    return !!json.success;
+  } catch {
+    return false;
+  }
+}
+
 export async function fetchKecamatan(_params?: { kabupaten?: string }) {
   // Always return static kecamatanMapData because the API's /api/kecamatan
   // endpoint returns raw reference data without scores, which the map needs
@@ -317,3 +387,194 @@ export async function scoreLocation(request: LocationScoreRequest): Promise<Loca
     return null;
   }
 }
+
+export interface SavedPolicyScenario {
+  id: number;
+  user_id: number;
+  scenario_name: string;
+  parameters: string;
+  results: string;
+  base_score: number;
+  simulated_score: number;
+  impact: number;
+  created_at: string;
+}
+
+export async function fetchSavedScenarios(): Promise<SavedPolicyScenario[]> {
+  return fetchWithFallback<SavedPolicyScenario[]>('/api/policy/scenarios', []);
+}
+
+export async function savePolicyScenario(body: {
+  scenario_name: string;
+  parameters: any;
+  results: any;
+  base_score: number;
+  simulated_score: number;
+  impact: number;
+}): Promise<SavedPolicyScenario | null> {
+  if (!BASE_URL) return null;
+  try {
+    const res = await fetch(`${BASE_URL}/api/policy/scenarios`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(body),
+    });
+    
+    if (res.status === 401) {
+      clearAuthToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('unauthorized'));
+      }
+      return null;
+    }
+    
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json.success && json.data) {
+      return json.data as SavedPolicyScenario;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function deletePolicyScenario(id: number): Promise<boolean> {
+  if (!BASE_URL) return false;
+  try {
+    const res = await fetch(`${BASE_URL}/api/policy/scenarios?id=${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    
+    if (res.status === 401) {
+      clearAuthToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('unauthorized'));
+      }
+      return false;
+    }
+    
+    if (!res.ok) return false;
+    const json = await res.json();
+    return !!json.success;
+  } catch {
+    return false;
+  }
+}
+
+export interface BatchScoreJobResponse {
+  jobId: number;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  totalRows: number;
+  processedRows: number;
+  createdAt: string;
+  updatedAt: string;
+  stats?: { total: number; avgScore: number; lowRisk: number; highRisk: number };
+  scoredRows?: any[];
+  error?: string;
+}
+
+export async function uploadBatchCredit(filename: string, csvText: string): Promise<{ jobId: number } | null> {
+  if (!BASE_URL) return null;
+  try {
+    const res = await fetch(`${BASE_URL}/api/reports/batch-score/upload`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ filename, csv_text: csvText }),
+    });
+    
+    if (res.status === 401) {
+      clearAuthToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('unauthorized'));
+      }
+      return null;
+    }
+    
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json.success && json.data) {
+      return json.data;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function getBatchCreditStatus(jobId: number): Promise<BatchScoreJobResponse | null> {
+  if (!BASE_URL) return null;
+  try {
+    const res = await fetch(`${BASE_URL}/api/reports/batch-score/status?jobId=${jobId}`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+    
+    if (res.status === 401) {
+      clearAuthToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('unauthorized'));
+      }
+      return null;
+    }
+    
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json.success && json.data) {
+      return json.data as BatchScoreJobResponse;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export interface SimulationResponse {
+  results: Array<{
+    cluster: number;
+    cluster_name: string;
+    allocation_pct: number;
+    allocated_budget: number;
+    predicted_umkm_improved: number;
+    predicted_new_jobs: number;
+    predicted_score_increase: number;
+    roi: number;
+  }>;
+  summary: {
+    totalImproved: number;
+    totalNewJobs: number;
+    avgScoreIncrease: number;
+    base_score: number;
+    simulated_score: number;
+  };
+}
+
+export async function simulatePolicy(allocations: number[], totalBudget: number): Promise<SimulationResponse | null> {
+  if (!BASE_URL) return null;
+  try {
+    const res = await fetch(`${BASE_URL}/api/policy/simulate`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ allocations, totalBudget }),
+    });
+    
+    if (res.status === 401) {
+      clearAuthToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('unauthorized'));
+      }
+      return null;
+    }
+    
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json.success && json.data) {
+      return json.data as SimulationResponse;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+

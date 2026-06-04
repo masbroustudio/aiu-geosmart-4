@@ -14,8 +14,8 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
     const auth = await requireAuth(request, context);
     userId = auth.userId;
 
-    const umkmData = getUmkmData();
-    const clusteredData = getUmkmClusteredData();
+    const umkmData = await getUmkmData();
+    const clusteredData = await getUmkmClusteredData();
     const summary = getExecutiveSummary();
 
     const totalUmkm = umkmData.length;

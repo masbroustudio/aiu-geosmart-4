@@ -93,6 +93,14 @@ export const initializeDatabase = async () => {
     try {
       await p.query(schemaSql);
       console.log('PostgreSQL schema initialized successfully');
+      
+      // Seeding dataset tables
+      try {
+        const { seedDatabase } = await import('./seed.js');
+        await seedDatabase();
+      } catch (seedErr) {
+        console.error('Failed to seed tables after schema initialization:', seedErr);
+      }
     } catch (error) {
       console.error('Failed to initialize PostgreSQL schema:', error);
     }

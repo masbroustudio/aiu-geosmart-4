@@ -13,10 +13,21 @@ import {
   Settings, 
   Globe, 
   Bell, 
-  AlertTriangle 
+  AlertTriangle,
+  Shield,
+  Trash2,
+  Key,
+  Plus
 } from "lucide-react";
 import { useTheme } from "@/lib/theme-context";
 import { useToast } from "@/lib/toast-context";
+import { 
+  fetchStatus, 
+  fetchDeveloperKeys, 
+  createDeveloperKey, 
+  deleteDeveloperKey, 
+  DeveloperKey 
+} from "@/lib/api";
 
 export default function SettingsPage() {
   const { theme, toggle } = useTheme();
@@ -38,14 +49,16 @@ export default function SettingsPage() {
   const [notifCredit, setNotifCredit] = useState(false);
   
   // Developer State
-  const [apiKey, setApiKey] = useState("geoumkm_live_key_9af3c22b918f407b8a10f84bc112999e");
+  const [developerKeys, setDeveloperKeys] = useState<DeveloperKey[]>([]);
+  const [latestRawKey, setLatestRawKey] = useState<string | null>(null);
   const [generatingKey, setGeneratingKey] = useState(false);
+  const [apiBaseUrl, setApiBaseUrl] = useState("https://green-bay-05bea5200.7.azurestaticapps.net/api");
   
   // Database State
   const [dbType, setDbType] = useState<"mock" | "postgres">("mock");
   const [resettingDb, setResettingDb] = useState(false);
 
-  // Decode JWT on Mount
+  // Decode JWT on Mount & Fetch DB Status & Load API Keys
   useEffect(() => {
     const token = localStorage.getItem("auth_token");
     if (token) {
@@ -67,6 +80,31 @@ export default function SettingsPage() {
         console.error("Gagal men-decode token otentikasi:", e);
       }
     }
+
+    // Set REST API Base URL dynamically based on location
+    if (typeof window !== "undefined") {
+      setApiBaseUrl(`${window.location.origin}/api`);
+    }
+
+    // Fetch actual database connection type from backend
+    fetchStatus()
+      .then((status) => {
+        if (status && status.dbType) {
+          setDbType(status.dbType);
+        }
+      })
+      .catch((err) => {
+        console.error("Gagal mengambil status database:", err);
+      });
+
+    // Fetch active Developer API keys from database
+    fetchDeveloperKeys()
+      .then((keys) => {
+        setDeveloperKeys(keys);
+      })
+      .catch((err) => {
+        console.error("Gagal mengambil API Keys:", err);
+      });
   }, []);
 
   // Actions
@@ -82,23 +120,50 @@ export default function SettingsPage() {
     confirmPassword && setConfirmPassword("");
   };
 
-  const handleCopyKey = () => {
-    navigator.clipboard.writeText(apiKey);
+  const handleCopyKey = (keyText: string) => {
+    navigator.clipboard.writeText(keyText);
     addToast("API Key disalin ke papan klip!", "success");
   };
 
-  const handleGenerateKey = () => {
+  const handleGenerateKey = async () => {
     setGeneratingKey(true);
-    setTimeout(() => {
-      const chars = "0123456789abcdef";
-      let randomHex = "";
-      for (let i = 0; i < 32; i++) {
-        randomHex += chars[Math.floor(Math.random() * 16)];
+    try {
+      const result = await createDeveloperKey();
+      if (result && result.raw_key) {
+        setLatestRawKey(result.raw_key);
+        // Refresh active keys list
+        const updatedKeys = await fetchDeveloperKeys();
+        setDeveloperKeys(updatedKeys);
+        addToast("API Key baru berhasil dibuat!", "success");
+      } else {
+        addToast("Gagal membuat API Key baru.", "error");
       }
-      setApiKey(`geoumkm_live_key_${randomHex}`);
+    } catch (err) {
+      console.error(err);
+      addToast("Gagal menghubungi server untuk membuat API Key.", "error");
+    } finally {
       setGeneratingKey(false);
-      addToast("API Key baru berhasil dibuat!", "success");
-    }, 800);
+    }
+  };
+
+  const handleDeleteKey = async (id: number) => {
+    if (!confirm("Apakah Anda yakin ingin mencabut (revoke) API Key ini? Aplikasi luar yang memakai key ini akan kehilangan akses.")) {
+      return;
+    }
+    try {
+      const success = await deleteDeveloperKey(id);
+      if (success) {
+        setDeveloperKeys(developerKeys.filter((k) => k.id !== id));
+        // Clear latest generated key preview if it was revoked
+        setLatestRawKey(null);
+        addToast("API Key berhasil dicabut!", "success");
+      } else {
+        addToast("Gagal mencabut API Key.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("Terjadi kesalahan sistem saat menghapus API Key.", "error");
+    }
   };
 
   const handleResetDb = () => {
@@ -401,40 +466,124 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <label className="block text-xs font-semibold text-slate-400">REST API Base URL</label>
                   <div className="px-4 py-3 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-300 font-mono">
-                    https://green-bay-05bea5200.7.azurestaticapps.net/api
+                    {apiBaseUrl}
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="block text-xs font-semibold text-slate-400">Live API Key</label>
-                  <div className="flex gap-2">
-                    <div className="flex-1 px-4 py-3 rounded-lg bg-slate-950 border border-slate-800 text-xs text-accent font-mono truncate">
-                      {apiKey}
+                {/* Banner API Key Baru Dibuat */}
+                {latestRawKey && (
+                  <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-3 animate-fadeIn">
+                    <div className="flex items-center gap-2 text-emerald-400">
+                      <Shield className="w-4 h-4 animate-pulse" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider">API Key Baru Berhasil Dibuat!</span>
                     </div>
-                    <button
-                      onClick={handleCopyKey}
-                      className="px-4 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition-colors flex items-center justify-center"
-                      title="Salin Key"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
+                    <p className="text-[10px] text-slate-300 leading-normal">
+                      Demi alasan keamanan, key ini **hanya akan diperlihatkan sekali ini saja**. Harap salin dan simpan di tempat aman sebelum meninggalkan halaman ini.
+                    </p>
+                    <div className="flex gap-2">
+                      <div className="flex-1 px-4 py-3 rounded-lg bg-slate-950 border border-emerald-500/20 text-xs text-emerald-400 font-mono select-all overflow-x-auto">
+                        {latestRawKey}
+                      </div>
+                      <button
+                        onClick={() => handleCopyKey(latestRawKey)}
+                        className="px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold transition-colors flex items-center justify-center gap-1.5 text-xs"
+                        title="Salin Key Baru"
+                      >
+                        <Copy className="w-4 h-4" />
+                        <span>Salin</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Daftar Keys */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-semibold text-slate-400">Daftar API Keys Aktif</label>
                     <button
                       onClick={handleGenerateKey}
                       disabled={generatingKey}
-                      className="px-4 rounded-lg bg-primary hover:bg-primary-600 disabled:opacity-50 text-white transition-colors flex items-center justify-center gap-2"
-                      title="Buat Ulang Key"
+                      className="px-3 py-1.5 rounded-lg bg-accent/20 hover:bg-accent/35 disabled:opacity-50 text-accent transition-all flex items-center gap-1.5 text-xs font-semibold"
                     >
-                      <RefreshCw className={`w-4 h-4 ${generatingKey ? "animate-spin" : ""}`} />
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Buat Key Baru</span>
                     </button>
                   </div>
+
+                  {developerKeys.length === 0 ? (
+                    <div className="p-8 rounded-xl border border-dashed border-slate-800 bg-slate-950/20 text-center space-y-2">
+                      <Key className="w-6 h-6 text-slate-600 mx-auto" />
+                      <p className="text-xs text-slate-400">Belum ada API Key yang terdaftar.</p>
+                      <p className="text-[10px] text-slate-500">Klik tombol di atas untuk membuat API Key integrasi pertama Anda.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950/40">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-800 bg-slate-950 text-slate-400 font-semibold uppercase tracking-wider text-[9px]">
+                              <th className="px-4 py-3">API Key Preview</th>
+                              <th className="px-4 py-3">Role</th>
+                              <th className="px-4 py-3">Rate Limit</th>
+                              <th className="px-4 py-3">Dibuat Pada</th>
+                              <th className="px-4 py-3 text-right">Aksi</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-800/60">
+                            {developerKeys.map((k) => (
+                              <tr key={k.id} className="hover:bg-slate-900/20 text-slate-300 transition-colors">
+                                <td className="px-4 py-3 font-mono text-[11px] text-accent">
+                                  geoumkm_live_key_****{k.key_hash.slice(-6)}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="px-2 py-0.5 rounded text-[9px] bg-slate-800 font-medium capitalize text-slate-300">
+                                    {k.role}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-slate-400">{k.rate_limit} req/min</td>
+                                <td className="px-4 py-3 text-slate-400">
+                                  {new Date(k.created_at).toLocaleDateString("id-ID", {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric"
+                                  })}
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <div className="flex justify-end gap-1.5">
+                                    <button
+                                      onClick={() => handleCopyKey(`geoumkm_live_key_****${k.key_hash.slice(-6)}`)}
+                                      className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                                      title="Salin Preview Key"
+                                    >
+                                      <Copy className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteKey(k.id)}
+                                      className="p-1.5 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors"
+                                      title="Cabut Akses Key"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="p-4 rounded-lg bg-slate-900/30 border border-slate-800/80 space-y-2">
                 <h4 className="text-xs font-semibold text-white">Contoh Penggunaan (cURL)</h4>
+                <p className="text-[10px] text-slate-400 leading-normal">
+                  Kirimkan API Key Anda melalui header kustom <code className="text-accent bg-slate-950 px-1 py-0.5 rounded">X-API-Key</code> saat melakukan request dari aplikasi pihak ketiga Anda.
+                </p>
                 <pre className="p-3 rounded bg-black/60 text-[10px] text-emerald-400 font-mono overflow-x-auto scrollbar-thin">
-{`curl -X GET "https://green-bay-05bea5200.7.azurestaticapps.net/api/overview" \\
-  -H "Authorization: Bearer ${apiKey}" \\
+{`curl -X GET "${apiBaseUrl}/overview" \\
+  -H "X-API-Key: geoumkm_live_key_9af3c22b918f407b8a10f84bc112999e" \\
   -H "Content-Type: application/json"`}
                 </pre>
               </div>
@@ -465,41 +614,46 @@ export default function SettingsPage() {
 
               {/* Konfigurasi Database */}
               <div className="space-y-3 pt-4 border-t border-slate-800">
-                <label className="block text-sm font-semibold text-slate-300">Tipe Database Terkoneksi</label>
+                <label className="block text-sm font-semibold text-slate-300">Tipe Database Terkoneksi (Real-time Status)</label>
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <button
-                      onClick={() => setDbType("mock")}
-                      className={`p-4 rounded-xl border text-left space-y-2 transition-all ${
+                    <div
+                      className={`p-4 rounded-xl border text-left space-y-2 relative transition-all ${
                         dbType === "mock"
-                          ? "bg-primary/10 border-accent text-white shadow-md"
-                          : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
+                          ? "bg-amber-500/10 border-amber-500/30 text-white shadow-md"
+                          : "bg-slate-950/40 border-slate-900 text-slate-500 opacity-60"
                       }`}
                     >
+                      {dbType === "mock" && (
+                        <span className="absolute top-3 right-3 px-2 py-0.5 rounded text-[9px] font-bold bg-amber-500 text-slate-950 uppercase tracking-wider">
+                          Aktif
+                        </span>
+                      )}
                       <div className="flex items-center gap-2">
-                        <Database className="w-4 h-4 text-accent" />
+                        <Database className="w-4 h-4 text-amber-500" />
                         <span className="text-xs font-bold">Simulasi JSON (Mock)</span>
                       </div>
                       <p className="text-[10px] opacity-70">Penyimpanan sementara di in-memory /tmp Azure Functions.</p>
-                    </button>
+                    </div>
 
-                    <button
-                      onClick={() => {
-                        setDbType("postgres");
-                        addToast("Koneksi PostgreSQL hanya tersedia di mode produksi Azure DB!", "info");
-                      }}
-                      className={`p-4 rounded-xl border text-left space-y-2 transition-all ${
+                    <div
+                      className={`p-4 rounded-xl border text-left space-y-2 relative transition-all ${
                         dbType === "postgres"
-                          ? "bg-primary/10 border-accent text-white shadow-md"
-                          : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
+                          ? "bg-emerald-500/10 border-emerald-500/30 text-white shadow-md"
+                          : "bg-slate-950/40 border-slate-900 text-slate-500 opacity-60"
                       }`}
                     >
+                      {dbType === "postgres" && (
+                        <span className="absolute top-3 right-3 px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500 text-slate-950 uppercase tracking-wider">
+                          Terkoneksi
+                        </span>
+                      )}
                       <div className="flex items-center gap-2">
-                        <Database className="w-4 h-4 text-sky-500" />
+                        <Database className="w-4 h-4 text-emerald-500" />
                         <span className="text-xs font-bold">Azure PostgreSQL</span>
                       </div>
                       <p className="text-[10px] opacity-70">Penyimpanan persisten relasional skala enterprise.</p>
-                    </button>
+                    </div>
                   </div>
 
                   {dbType === "mock" && (
@@ -507,6 +661,15 @@ export default function SettingsPage() {
                       <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
                       <p className="text-[10px] text-amber-300/80 leading-normal">
                         <strong>Pemberitahuan:</strong> Mode simulasi JSON di `/tmp` akan ter-reset otomatis ketika container Azure Functions mengalami <em>cold start</em>.
+                      </p>
+                    </div>
+                  )}
+
+                  {dbType === "postgres" && (
+                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex gap-2">
+                      <Shield className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-emerald-300/80 leading-normal">
+                        <strong>Sistem Aman:</strong> Koneksi database Azure PostgreSQL aktif secara langsung. Seluruh data pengguna, log audit, dan portofolio Anda tersimpan secara aman dan persisten.
                       </p>
                     </div>
                   )}

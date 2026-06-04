@@ -1,10 +1,11 @@
 'use client';
  
 import { useState } from 'react';
-import { FileBarChart, Building2, Landmark, TrendingUp, FileDown } from 'lucide-react';
+import { FileBarChart, Building2, Landmark, TrendingUp, FileDown, RefreshCw } from 'lucide-react';
 import { creditData, clusterData, policyData } from '@/lib/static-data';
 import { generateCreditReport, generateGovernmentReport, generateInvestmentReport } from '@/lib/pdf-report';
 import { useToast } from '@/lib/toast-context';
+import { uploadBatchCredit, getBatchCreditStatus } from '@/lib/api';
  
 type ReportType = 'credit' | 'government' | 'investment';
  
@@ -41,105 +42,68 @@ export default function ReportsPage() {
   const [csvData, setCsvData] = useState<any[]>([]);
   const [csvFileName, setCsvFileName] = useState('');
   const [csvStats, setCsvStats] = useState<{ total: number; avgScore: number; lowRisk: number; highRisk: number } | null>(null);
+  const [csvLoading, setCsvLoading] = useState(false);
+  const [csvProgress, setCsvProgress] = useState<{ total: number; processed: number } | null>(null);
 
   const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setCsvFileName(file.name);
+    setCsvLoading(true);
+    setCsvProgress({ total: 0, processed: 0 });
  
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const text = event.target?.result as string;
-        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-        if (lines.length <= 1) {
-          addToast("Berkas CSV kosong atau tidak valid!", "error");
-          return;
-        }
- 
-        // Parse headers
-        const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
         
-        // Find indices of important columns
-        const nameIdx = headers.findIndex(h => h.toLowerCase().includes('nama') || h.toLowerCase().includes('name') || h.toLowerCase().includes('umkm'));
-        const omsetIdx = headers.findIndex(h => h.toLowerCase().includes('omset') || h.toLowerCase().includes('revenue'));
-        const karyawanIdx = headers.findIndex(h => h.toLowerCase().includes('karyawan') || h.toLowerCase().includes('employee'));
-        const digitalIdx = headers.findIndex(h => h.toLowerCase().includes('digital') || h.toLowerCase().includes('online'));
-        const tahunIdx = headers.findIndex(h => h.toLowerCase().includes('tahun') || h.toLowerCase().includes('year') || h.toLowerCase().includes('berdiri'));
+        // 1. Upload CSV to initiate background processing job
+        const jobResult = await uploadBatchCredit(file.name, text);
         
-        const scoredRows: any[] = [];
-        let totalScore = 0;
-        let lowRiskCount = 0;
-        let highRiskCount = 0;
- 
-        for (let i = 1; i < lines.length; i++) {
-          const cols = lines[i].split(',').map(c => c.trim().replace(/^["']|["']$/g, ''));
-          if (cols.length < headers.length) continue;
- 
-          const umkmName = nameIdx !== -1 ? cols[nameIdx] : `UMKM #${i}`;
-          const omset = omsetIdx !== -1 ? parseInt(cols[omsetIdx]) || 3000000 : 3000000;
-          const karyawan = karyawanIdx !== -1 ? parseInt(cols[karyawanIdx]) || 3 : 3;
-          const digital = digitalIdx !== -1 ? cols[digitalIdx].toLowerCase() === 'true' || cols[digitalIdx] === '1' || cols[digitalIdx].toLowerCase() === 'ya' : false;
-          const tahunBerdiri = tahunIdx !== -1 ? parseInt(cols[tahunIdx]) || 2022 : 2022;
- 
-          // Apply credit scoring simulated logic
-          let creditScore = 650;
-          if (omset > 5000000) creditScore += 50;
-          else if (omset < 1000000) creditScore -= 30;
- 
-          if (karyawan > 10) creditScore += 30;
-          if (digital) creditScore += 40;
+        if (jobResult && jobResult.jobId) {
+          const jobId = jobResult.jobId;
           
-          const years = new Date().getFullYear() - tahunBerdiri;
-          if (years > 5) creditScore += 40;
-          else if (years > 3) creditScore += 20;
- 
-          creditScore = Math.min(850, Math.max(300, creditScore));
- 
-          let riskLevel = 'medium';
-          if (creditScore >= 750) {
-            riskLevel = 'low';
-            lowRiskCount++;
-          } else if (creditScore < 550) {
-            riskLevel = 'high';
-            highRiskCount++;
-          }
- 
-          let rating = 'BBB';
-          if (creditScore >= 800) rating = 'AAA';
-          else if (creditScore >= 750) rating = 'AA';
-          else if (creditScore >= 700) rating = 'A';
-          else if (creditScore >= 650) rating = 'BBB';
-          else if (creditScore >= 600) rating = 'BB';
-          else if (creditScore >= 550) rating = 'B';
-          else rating = 'CCC';
- 
-          const pd = creditScore >= 750 ? 1.2 : creditScore >= 650 ? 4.5 : creditScore >= 550 ? 12.8 : 28.5;
- 
-          scoredRows.push({
-            name: umkmName,
-            omset,
-            karyawan,
-            digital: digital ? 'Ya' : 'Tidak',
-            tahunBerdiri,
-            score: creditScore,
-            rating,
-            riskLevel,
-            pd
-          });
-          totalScore += creditScore;
+          // 2. Poll for job completion
+          const pollInterval = setInterval(async () => {
+            try {
+              const statusRes = await getBatchCreditStatus(jobId);
+              if (statusRes) {
+                setCsvProgress({ total: statusRes.totalRows, processed: statusRes.processedRows });
+                
+                if (statusRes.status === 'completed') {
+                  clearInterval(pollInterval);
+                  setCsvData(statusRes.scoredRows || []);
+                  setCsvStats(statusRes.stats || null);
+                  setCsvLoading(false);
+                  setCsvProgress(null);
+                  addToast(`Berhasil memproses ${statusRes.scoredRows?.length} baris UMKM secara asinkron!`, "success");
+                } else if (statusRes.status === 'failed') {
+                  clearInterval(pollInterval);
+                  setCsvLoading(false);
+                  setCsvProgress(null);
+                  addToast(statusRes.error || "Gagal memproses berkas CSV.", "error");
+                }
+              } else {
+                clearInterval(pollInterval);
+                setCsvLoading(false);
+                setCsvProgress(null);
+                addToast("Gagal mengambil status pemrosesan.", "error");
+              }
+            } catch (err) {
+              clearInterval(pollInterval);
+              setCsvLoading(false);
+              setCsvProgress(null);
+              addToast("Terjadi kesalahan koneksi saat polling.", "error");
+            }
+          }, 1000);
+        } else {
+          setCsvLoading(false);
+          setCsvProgress(null);
+          addToast("Gagal membuat tugas pemrosesan batch di server.", "error");
         }
- 
-        setCsvData(scoredRows);
-        setCsvStats({
-          total: scoredRows.length,
-          avgScore: Math.round(totalScore / scoredRows.length),
-          lowRisk: lowRiskCount,
-          highRisk: highRiskCount
-        });
-        
-        addToast(`Berhasil memproses ${scoredRows.length} baris UMKM!`, "success");
       } catch (err) {
+        setCsvLoading(false);
+        setCsvProgress(null);
         addToast("Gagal memproses file CSV.", "error");
         console.error(err);
       }
@@ -443,16 +407,32 @@ export default function ReportsPage() {
               accept=".csv"
               onChange={handleCsvUpload}
               className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+              disabled={csvLoading}
             />
-            <div className="w-12 h-12 rounded-full bg-slate-800 group-hover:bg-accent/15 flex items-center justify-center text-slate-400 group-hover:text-accent transition-all mb-3">
-              <FileDown className="w-6 h-6 rotate-180" />
-            </div>
-            <h4 className="text-xs font-bold text-white">
-              {csvFileName ? csvFileName : "Pilih berkas CSV Anda"}
-            </h4>
-            <p className="text-[10px] text-slate-500 mt-1">
-              Kolom wajib: Nama, Omset, Karyawan, Digital (true/false), Tahun_Berdiri
-            </p>
+            {csvLoading ? (
+              <div className="flex flex-col items-center justify-center">
+                <RefreshCw className="w-8 h-8 text-accent animate-spin mb-3" />
+                <h4 className="text-xs font-bold text-white">Memproses CSV di Server...</h4>
+                {csvProgress && csvProgress.total > 0 && (
+                  <p className="text-[10px] text-accent mt-1.5 font-bold">
+                    Progres: {csvProgress.processed} / {csvProgress.total} baris ({Math.round(csvProgress.processed / csvProgress.total * 100)}%)
+                  </p>
+                )}
+                <p className="text-[9px] text-slate-500 mt-1">Mengalkulasi skor kredit secara asinkron dengan model ML XGBoost.</p>
+              </div>
+            ) : (
+              <>
+                <div className="w-12 h-12 rounded-full bg-slate-800 group-hover:bg-accent/15 flex items-center justify-center text-slate-400 group-hover:text-accent transition-all mb-3">
+                  <FileDown className="w-6 h-6 rotate-180" />
+                </div>
+                <h4 className="text-xs font-bold text-white">
+                  {csvFileName ? csvFileName : "Pilih berkas CSV Anda"}
+                </h4>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Kolom wajib: Nama, Omset, Karyawan, Digital (true/false), Tahun_Berdiri
+                </p>
+              </>
+            )}
           </div>
 
           {/* Metrics & Results Overview */}

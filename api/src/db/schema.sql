@@ -142,3 +142,94 @@ FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 -- Apply updater trigger to umkm_scorings
 CREATE TRIGGER update_umkm_scorings_updated_at BEFORE UPDATE ON umkm_scorings
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Main UMKM Dataset table
+CREATE TABLE IF NOT EXISTS umkm_dataset (
+  id SERIAL PRIMARY KEY,
+  kabupaten_kota VARCHAR(255) NOT NULL,
+  kecamatan VARCHAR(255) NOT NULL,
+  latitude DECIMAL(9, 6),
+  longitude DECIMAL(9, 6),
+  is_kota BOOLEAN,
+  jenis_usaha VARCHAR(100),
+  tahun_berdiri INTEGER,
+  jumlah_karyawan INTEGER,
+  has_digital_presence INTEGER,
+  omset_bulanan DECIMAL(15, 2),
+  populasi INTEGER,
+  kepadatan_penduduk DECIMAL(12, 2),
+  income_per_kapita DECIMAL(15, 2),
+  jarak_ke_jalan_utama DECIMAL(8, 2),
+  jarak_ke_pasar DECIMAL(8, 2),
+  akses_internet_pct DECIMAL(5, 2),
+  skor_infrastruktur DECIMAL(5, 2),
+  jumlah_kompetitor_radius_3km INTEGER,
+  jarak_ke_bank_terdekat DECIMAL(8, 2),
+  penetrasi_kur_pct DECIMAL(5, 2),
+  risiko_banjir INTEGER,
+  risiko_gempa INTEGER,
+  skor_potensi DECIMAL(5, 2),
+  is_survived_3yr INTEGER
+);
+
+-- Clustered UMKM Dataset table (with feature engineering features and cluster results)
+CREATE TABLE IF NOT EXISTS umkm_clustered (
+  id SERIAL PRIMARY KEY,
+  kabupaten_kota VARCHAR(255) NOT NULL,
+  kecamatan VARCHAR(255) NOT NULL,
+  latitude DECIMAL(9, 6),
+  longitude DECIMAL(9, 6),
+  is_kota BOOLEAN,
+  jenis_usaha VARCHAR(100),
+  tahun_berdiri INTEGER,
+  jumlah_karyawan INTEGER,
+  has_digital_presence INTEGER,
+  omset_bulanan DECIMAL(15, 2),
+  populasi INTEGER,
+  kepadatan_penduduk DECIMAL(12, 2),
+  income_per_kapita DECIMAL(15, 2),
+  jarak_ke_jalan_utama DECIMAL(8, 2),
+  jarak_ke_pasar DECIMAL(8, 2),
+  akses_internet_pct DECIMAL(5, 2),
+  skor_infrastruktur DECIMAL(5, 2),
+  jumlah_kompetitor_radius_3km INTEGER,
+  jarak_ke_bank_terdekat DECIMAL(8, 2),
+  penetrasi_kur_pct DECIMAL(5, 2),
+  risiko_banjir INTEGER,
+  risiko_gempa INTEGER,
+  skor_potensi DECIMAL(5, 2),
+  is_survived_3yr INTEGER,
+  business_maturity DECIMAL(8, 4),
+  infra_x_income DECIMAL(15, 4),
+  competition_density_ratio DECIMAL(10, 4),
+  avg_distance_to_facilities DECIMAL(8, 4),
+  market_gap_score DECIMAL(5, 2),
+  digital_readiness_index DECIMAL(5, 2),
+  risk_composite DECIMAL(5, 2),
+  financial_access_score DECIMAL(5, 2),
+  omset_per_karyawan DECIMAL(15, 2),
+  location_advantage DECIMAL(5, 2),
+  cluster_kmeans INTEGER,
+  cluster_dbscan INTEGER,
+  cluster_name VARCHAR(100)
+);
+
+CREATE TABLE IF NOT EXISTS batch_jobs (
+  id SERIAL PRIMARY KEY,
+  user_id INT,
+  filename VARCHAR(255) NOT NULL,
+  status VARCHAR(50) DEFAULT 'pending',
+  total_rows INT DEFAULT 0,
+  processed_rows INT DEFAULT 0,
+  result_stats TEXT, -- Stringified JSON statistics
+  result_rows TEXT,  -- Stringified JSON scored rows
+  error_message TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_umkm_dataset_kabupaten_kota ON umkm_dataset(kabupaten_kota);
+CREATE INDEX IF NOT EXISTS idx_umkm_dataset_kecamatan ON umkm_dataset(kecamatan);
+CREATE INDEX IF NOT EXISTS idx_umkm_clustered_cluster_kmeans ON umkm_clustered(cluster_kmeans);
+CREATE INDEX IF NOT EXISTS idx_batch_jobs_user_id ON batch_jobs(user_id);
+

@@ -1,17 +1,45 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { TrendingUp, Target, ArrowUpRight, Wallet } from 'lucide-react';
+import { 
+  TrendingUp, 
+  Target, 
+  ArrowUpRight, 
+  Wallet, 
+  Save, 
+  History, 
+  Trash2, 
+  Play, 
+  Info 
+} from 'lucide-react';
 import { policyData as staticPolicyData, clusterData } from '@/lib/static-data';
-import { fetchPolicy } from '@/lib/api';
+import { 
+  fetchPolicy, 
+  fetchSavedScenarios, 
+  savePolicyScenario, 
+  deletePolicyScenario, 
+  simulatePolicy,
+  SavedPolicyScenario 
+} from '@/lib/api';
+import { useToast } from '@/lib/toast-context';
 
 const RECOMMENDED_ALLOCATIONS = clusterData.govPriority.map(c => c.budget_pct);
 
 export default function PolicySimulationPage() {
+  const { addToast } = useToast();
   const [policyData, setPolicyData] = useState(staticPolicyData);
   const [loading, setLoading] = useState(true);
   const [allocations, setAllocations] = useState<number[]>(RECOMMENDED_ALLOCATIONS);
   const [totalBudget, setTotalBudget] = useState(100_000_000_000);
+  
+  // Saved Scenarios State
+  const [savedScenarios, setSavedScenarios] = useState<SavedPolicyScenario[]>([]);
+  const [scenarioName, setScenarioName] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // Simulation Results State
+  const [simulationResults, setSimulationResults] = useState<any | null>(null);
+  const [simulating, setSimulating] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,8 +56,142 @@ export default function PolicySimulationPage() {
       }
     }
     loadData();
+
+    // Fetch saved scenarios
+    fetchSavedScenarios()
+      .then((scenarios) => {
+        if (!cancelled) {
+          setSavedScenarios(scenarios);
+        }
+      })
+      .catch((err) => {
+        console.error("Gagal memuat skenario tersimpan:", err);
+      });
+
     return () => { cancelled = true; };
   }, []);
+
+  // Budget calculations
+  const totalPct = allocations.reduce((sum, v) => sum + v, 0);
+
+  // Debounced Simulation Query
+  useEffect(() => {
+    if (totalPct !== 100) {
+      setSimulationResults(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setSimulating(true);
+      try {
+        const res = await simulatePolicy(allocations, totalBudget);
+        if (res) {
+          setSimulationResults(res);
+        }
+      } catch (err) {
+        console.error("Gagal menjalankan simulasi:", err);
+      } finally {
+        setSimulating(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [allocations, totalBudget, totalPct]);
+
+  // Derived metrics
+  const totalImproved = simulationResults
+    ? simulationResults.summary.totalImproved
+    : clusterData.govPriority.reduce((sum, cluster, idx) => {
+        const allocated = totalBudget * (allocations[idx] / 100);
+        return sum + Math.round(allocated / 50_000_000 * cluster.priority_score * cluster.n_umkm / 1000);
+      }, 0);
+
+  const totalJobs = simulationResults
+    ? simulationResults.summary.totalNewJobs
+    : clusterData.govPriority.reduce((sum, cluster, idx) => {
+        const allocated = totalBudget * (allocations[idx] / 100);
+        const improved = Math.round(allocated / 50_000_000 * cluster.priority_score * cluster.n_umkm / 1000);
+        return sum + Math.round(improved * 2.5);
+      }, 0);
+  
+  const avgScoreIncrease = simulationResults
+    ? simulationResults.summary.avgScoreIncrease
+    : totalBudget > 0
+      ? Number((clusterData.govPriority.reduce((sum, cluster, idx) => {
+          const allocated = totalBudget * (allocations[idx] / 100);
+          return sum + (allocated / totalBudget) * 15 * cluster.priority_score;
+        }, 0) / clusterData.govPriority.length).toFixed(1))
+      : 0;
+
+  // Actions
+  const handleSaveScenario = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!scenarioName.trim()) {
+      addToast("Nama skenario tidak boleh kosong!", "error");
+      return;
+    }
+    if (totalPct !== 100) {
+      addToast("Total alokasi anggaran harus 100%!", "error");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const body = {
+        scenario_name: scenarioName,
+        parameters: {
+          allocations,
+          totalBudget
+        },
+        results: {
+          totalImproved,
+          totalNewJobs: totalJobs,
+          avgScoreIncrease
+        },
+        base_score: 61.3, // Baseline average score
+        simulated_score: 61.3 + avgScoreIncrease,
+        impact: avgScoreIncrease
+      };
+
+      const result = await savePolicyScenario(body);
+      if (result) {
+        setSavedScenarios([result, ...savedScenarios]);
+        setScenarioName("");
+        addToast("Skenario berhasil disimpan!", "success");
+      } else {
+        addToast("Gagal menyimpan skenario.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("Terjadi kesalahan sistem.", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLoadScenario = (savedAllocations: number[], savedBudget: number, name: string) => {
+    setAllocations(savedAllocations);
+    setTotalBudget(savedBudget);
+    addToast(`Skenario "${name}" berhasil diterapkan!`, "success");
+  };
+
+  const handleDeleteScenario = async (id: number) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus skenario tersimpan ini?")) {
+      return;
+    }
+    try {
+      const success = await deletePolicyScenario(id);
+      if (success) {
+        setSavedScenarios(savedScenarios.filter((s) => s.id !== id));
+        addToast("Skenario berhasil dihapus!", "success");
+      } else {
+        addToast("Gagal menghapus skenario.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("Terjadi kesalahan sistem.", "error");
+    }
+  };
 
   if (loading) {
     return (
@@ -87,67 +249,71 @@ export default function PolicySimulationPage() {
       </div>
 
       {/* Budget Allocation Simulator */}
-      <div className="glass-card p-6">
-        <div className="flex items-center gap-2 mb-4">
+      <div className="glass-card p-6 space-y-6">
+        <div className="flex items-center gap-2">
           <Wallet className="w-5 h-5 text-accent" />
           <h3 className="text-lg font-semibold text-white">Simulator Alokasi Anggaran</h3>
         </div>
 
         {/* Total Budget Input */}
-        <div className="mb-6">
-          <label className="block text-sm text-slate-400 mb-2">Total Anggaran (Rp)</label>
-          <input
-            type="number"
-            value={totalBudget}
-            onChange={(e) => setTotalBudget(Number(e.target.value) || 0)}
-            className="w-full md:w-80 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-accent"
-          />
-          <p className="text-xs text-slate-400 mt-1">
-            Rp {totalBudget.toLocaleString('id-ID')}
-          </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 mb-2">Total Anggaran Stimulus (Rp)</label>
+            <input
+              type="number"
+              value={totalBudget}
+              onChange={(e) => setTotalBudget(Number(e.target.value) || 0)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+            <p className="text-[10px] text-slate-500 mt-1.5 font-medium">
+              Format Rupiah: Rp {totalBudget.toLocaleString('id-ID')}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-900/40 border border-slate-800 text-[10px] text-slate-400 leading-normal">
+            <Info className="w-4 h-4 text-accent flex-shrink-0" />
+            <p>
+              Simulasi alokasi anggaran didasarkan pada biaya intervensi rata-rata <strong>Rp 50.000.000 / UMKM</strong> untuk program kematangan bisnis, infrastruktur, atau digitalisasi.
+            </p>
+          </div>
         </div>
 
         {/* Invalid allocation warning */}
-        {allocations.reduce((sum, v) => sum + v, 0) !== 100 && (
-          <div className="mb-4 px-3 py-2 bg-red-500/10 border border-red-500/30 rounded-lg">
-            <p className="text-xs text-red-400">Alokasi harus 100% untuk prediksi yang valid</p>
+        {totalPct !== 100 && (
+          <div className="px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <p className="text-xs text-red-400 font-medium">⚠️ Total alokasi anggaran saat ini ({totalPct}%) harus tepat 100% untuk mengkalkulasi prediksi secara valid.</p>
           </div>
         )}
 
-        {/*
-          Budget Allocation Formula Assumptions:
-          ----------------------------------------
-          predicted_umkm_improved = allocated / 50_000_000 * priority_score * n_umkm / 1000
-            - 50M (Rp 50,000,000) = estimated cost per UMKM intervention program
-            - priority_score = cluster-specific impact multiplier derived from ML clustering
-            - n_umkm / 1000 = normalized cluster size factor
-
-          predicted_new_jobs = predicted_umkm_improved * 2.5
-            - 2.5 = average job creation multiplier per improved UMKM (BPS 2023 estimate)
-
-          predicted_score_increase = (allocated / totalBudget) * 15 * priority_score
-            - 15 = maximum score improvement ceiling (out of 100-point scale)
-
-          roi = predicted_umkm_improved * 12_000_000 / allocated * 100
-            - 12M (Rp 12,000,000) = estimated annual revenue increase per improved UMKM
-        */}
-
         {/* Cluster Allocation Sliders */}
-        <div className="space-y-4 mb-6">
+        <div className="space-y-4">
           {clusterData.govPriority.map((cluster, idx) => {
             const pct = allocations[idx];
             const allocated = totalBudget * (pct / 100);
-            const predicted_umkm_improved = Math.round(allocated / 50_000_000 * cluster.priority_score * cluster.n_umkm / 1000);
-            const predicted_new_jobs = Math.round(predicted_umkm_improved * 2.5);
-            const predicted_score_increase = totalBudget > 0 ? ((allocated / totalBudget) * 15 * cluster.priority_score).toFixed(1) : '0.0';
-            const roi = allocated > 0 ? (predicted_umkm_improved * 12_000_000 / allocated * 100).toFixed(0) : '0';
+            const clusterSim = simulationResults?.results?.find((r: any) => r.cluster_name === cluster.cluster) 
+              || simulationResults?.results?.[idx];
+            
+            const predicted_umkm_improved = clusterSim 
+              ? clusterSim.predicted_umkm_improved 
+              : Math.round(allocated / 50_000_000 * cluster.priority_score * cluster.n_umkm / 1000);
+              
+            const predicted_new_jobs = clusterSim
+              ? clusterSim.predicted_new_jobs
+              : Math.round(predicted_umkm_improved * 2.5);
+              
+            const predicted_score_increase = clusterSim
+              ? clusterSim.predicted_score_increase.toFixed(1)
+              : (totalBudget > 0 ? ((allocated / totalBudget) * 15 * cluster.priority_score).toFixed(1) : '0.0');
+              
+            const roi = clusterSim
+              ? clusterSim.roi
+              : (allocated > 0 ? (predicted_umkm_improved * 12_000_000 / allocated * 100).toFixed(0) : '0');
 
             return (
-              <div key={idx} className="bg-slate-800/50 rounded-lg p-4">
+              <div key={idx} className="bg-slate-950/40 border border-slate-900 rounded-xl p-4 transition-all hover:border-slate-800">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   <div className="lg:w-1/4">
-                    <p className="text-sm font-medium text-white">{cluster.cluster}</p>
-                    <p className="text-xs text-slate-400">{cluster.n_umkm.toLocaleString()} UMKM</p>
+                    <p className="text-sm font-semibold text-white">{cluster.cluster}</p>
+                    <p className="text-[10px] text-slate-500 font-medium">{cluster.n_umkm.toLocaleString()} UMKM Terklaster</p>
                   </div>
                   <div className="lg:w-1/4 flex items-center gap-3">
                     <input
@@ -161,30 +327,30 @@ export default function PolicySimulationPage() {
                         newAllocations[idx] = Number(e.target.value);
                         setAllocations(newAllocations);
                       }}
-                      className="flex-1 accent-emerald-500 h-2 rounded-lg cursor-pointer"
+                      className="flex-1 accent-accent h-1.5 rounded-lg cursor-pointer bg-slate-800"
                     />
-                    <span className="text-sm font-mono text-white w-12 text-right">{pct}%</span>
+                    <span className="text-xs font-mono font-bold text-white w-10 text-right">{pct}%</span>
                   </div>
                   <div className="lg:w-1/4">
-                    <p className="text-xs text-slate-400">Alokasi</p>
-                    <p className="text-sm font-medium text-white">Rp {allocated.toLocaleString('id-ID')}</p>
+                    <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Dana Dialokasikan</p>
+                    <p className="text-xs font-bold text-white">Rp {allocated.toLocaleString('id-ID')}</p>
                   </div>
-                  <div className={`lg:w-1/4 grid grid-cols-2 gap-2${allocations.reduce((sum, v) => sum + v, 0) !== 100 ? ' opacity-50' : ''}`}>
+                  <div className={`lg:w-1/4 grid grid-cols-2 gap-2 text-xs${totalPct !== 100 ? ' opacity-40' : ''}`}>
                     <div>
-                      <p className="text-xs text-slate-400">UMKM Meningkat</p>
-                      <p className="text-sm font-medium text-emerald-400">+{predicted_umkm_improved}</p>
+                      <p className="text-[10px] text-slate-500 font-medium">UMKM Meningkat</p>
+                      <p className="text-xs font-bold text-emerald-400">+{predicted_umkm_improved}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-400">Lapangan Kerja</p>
-                      <p className="text-sm font-medium text-emerald-400">+{predicted_new_jobs}</p>
+                      <p className="text-[10px] text-slate-500 font-medium">Pekerjaan Baru</p>
+                      <p className="text-xs font-bold text-emerald-400">+{predicted_new_jobs}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-400">Skor +</p>
-                      <p className="text-sm font-medium text-emerald-400">+{predicted_score_increase}</p>
+                      <p className="text-[10px] text-slate-500 font-medium">Dampak Skor</p>
+                      <p className="text-xs font-bold text-emerald-400">+{predicted_score_increase}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-400">ROI</p>
-                      <p className="text-sm font-medium text-emerald-400">{roi}%</p>
+                      <p className="text-[10px] text-slate-500 font-medium">Est. ROI</p>
+                      <p className="text-xs font-bold text-emerald-400">{roi}%</p>
                     </div>
                   </div>
                 </div>
@@ -193,55 +359,132 @@ export default function PolicySimulationPage() {
           })}
         </div>
 
-        {/* Validation */}
-        {(() => {
-          const totalPct = allocations.reduce((sum, v) => sum + v, 0);
-          const totalImproved = clusterData.govPriority.reduce((sum, cluster, idx) => {
-            const allocated = totalBudget * (allocations[idx] / 100);
-            return sum + Math.round(allocated / 50_000_000 * cluster.priority_score * cluster.n_umkm / 1000);
-          }, 0);
-          const totalJobs = clusterData.govPriority.reduce((sum, cluster, idx) => {
-            const allocated = totalBudget * (allocations[idx] / 100);
-            const improved = Math.round(allocated / 50_000_000 * cluster.priority_score * cluster.n_umkm / 1000);
-            return sum + Math.round(improved * 2.5);
-          }, 0);
-          const avgScoreIncrease = totalBudget > 0
-            ? (clusterData.govPriority.reduce((sum, cluster, idx) => {
-                const allocated = totalBudget * (allocations[idx] / 100);
-                return sum + (allocated / totalBudget) * 15 * cluster.priority_score;
-              }, 0) / clusterData.govPriority.length).toFixed(1)
-            : '0.0';
-
-          return (
-            <div className="space-y-3">
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-slate-400">Total Alokasi:</span>
-                <span className={`text-sm font-bold ${totalPct === 100 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {totalPct}%
-                </span>
-                {totalPct !== 100 && (
-                  <span className="text-xs text-red-400">
-                    Total alokasi harus 100%
-                  </span>
-                )}
-              </div>
-
-              {/* Summary */}
-              <p className={`text-sm text-slate-200${totalPct !== 100 ? ' opacity-50' : ''}`}>
-                Dengan alokasi ini, diperkirakan <span className="font-bold text-emerald-400">{totalImproved}</span> UMKM akan meningkat skornya rata-rata <span className="font-bold text-emerald-400">{avgScoreIncrease}</span> poin, menciptakan <span className="font-bold text-emerald-400">{totalJobs}</span> lapangan kerja baru
-              </p>
-
-              {/* Reset Button */}
-              <button
-                onClick={() => setAllocations([...RECOMMENDED_ALLOCATIONS])}
-                className="px-4 py-2 bg-accent/20 text-accent rounded-lg text-sm font-medium hover:bg-accent/30 transition-colors"
-              >
-                Reset to Recommended
-              </button>
+        {/* Validation & Save Scenarios Panel */}
+        <div className="pt-4 border-t border-slate-900 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-4">
+              <span className="text-xs font-semibold text-slate-400">Total Alokasi Anggaran:</span>
+              <span className={`text-sm font-bold ${totalPct === 100 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {totalPct}%
+              </span>
+              {totalPct === 100 ? (
+                <span className="text-[10px] text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded uppercase tracking-wider">Lulus Validasi</span>
+              ) : (
+                <span className="text-[10px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded uppercase tracking-wider">Kurang/Lebih</span>
+              )}
             </div>
-          );
-        })()}
+            
+            <p className={`text-xs text-slate-300 leading-relaxed${totalPct !== 100 ? ' opacity-40' : ''}`}>
+              Skenario ini akan meningkatkan skor potensi wilayah rata-rata <span className="font-bold text-emerald-400">+{avgScoreIncrease.toFixed(1)}</span> poin, menstimulasi pertumbuhan <span className="font-bold text-emerald-400">{totalImproved}</span> UMKM, dan membuka <span className="font-bold text-emerald-400">{totalJobs}</span> lowongan kerja baru.
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setAllocations([...RECOMMENDED_ALLOCATIONS])}
+              className="px-4 py-2 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-semibold transition-colors"
+            >
+              Reset ke Rekomendasi
+            </button>
+          </div>
+        </div>
+
+        {/* Simpan Skenario Panel */}
+        <div className="p-4 rounded-xl bg-slate-900/30 border border-slate-800/80 flex flex-col md:flex-row md:items-center gap-4">
+          <div className="flex-1 space-y-1">
+            <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+              <Save className="w-4 h-4 text-accent" />
+              <span>Simpan Skenario Simulasi</span>
+            </h4>
+            <p className="text-[10px] text-slate-400">Simpan konfigurasi parameter dan hasil estimasi ini ke basis data Anda.</p>
+          </div>
+          <div className="flex gap-2 w-full md:w-auto">
+            <input
+              type="text"
+              placeholder="Nama skenario (misal: Rencana Q3)"
+              value={scenarioName}
+              onChange={(e) => setScenarioName(e.target.value)}
+              className="flex-1 md:flex-none bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-700 focus:outline-none focus:border-accent w-full md:w-64"
+              disabled={totalPct !== 100 || saving}
+            />
+            <button
+              onClick={handleSaveScenario}
+              disabled={saving || !scenarioName.trim() || totalPct !== 100}
+              className="px-4 py-2 bg-primary hover:bg-primary-600 disabled:opacity-40 text-slate-950 font-bold rounded-lg text-xs transition-colors flex items-center gap-1.5 flex-shrink-0"
+            >
+              <span>{saving ? "Menyimpan..." : "Simpan Skenario"}</span>
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* SECTION: SAVED SCENARIOS */}
+      {savedScenarios.length > 0 && (
+        <div className="glass-card p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <History className="w-5 h-5 text-accent" />
+            <h3 className="text-lg font-semibold text-white">Skenario Simulasi Tersimpan</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {savedScenarios.map((scenario) => {
+              const params = typeof scenario.parameters === 'string' ? JSON.parse(scenario.parameters || "{}") : scenario.parameters;
+              const res = typeof scenario.results === 'string' ? JSON.parse(scenario.results || "{}") : scenario.results;
+              
+              return (
+                <div key={scenario.id} className="p-4 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3 relative hover:border-slate-800 transition-all group">
+                  <button
+                    onClick={() => handleDeleteScenario(scenario.id)}
+                    className="absolute top-3 right-3 p-1.5 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                    title="Hapus Skenario"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                  
+                  <div>
+                    <h4 className="text-xs font-bold text-white pr-6 truncate">{scenario.scenario_name}</h4>
+                    <p className="text-[9px] text-slate-500 font-medium">
+                      Dibuat pada {new Date(scenario.created_at).toLocaleDateString("id-ID", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })}
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 text-[10px] text-slate-400 bg-slate-950/20 p-2.5 rounded-lg">
+                    <div>
+                      <span className="text-[9px] text-slate-500">Anggaran Stimulus</span>
+                      <p className="text-white font-semibold">Rp {(params.totalBudget || 0).toLocaleString("id-ID")}</p>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-slate-500">Dampak Rata-Rata</span>
+                      <p className="text-emerald-400 font-bold">+{scenario.impact.toFixed(1)} poin</p>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-slate-500">UMKM Terbantu</span>
+                      <p className="text-white font-semibold">+{res.totalImproved || 0}</p>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-slate-500">Pekerjaan Baru</span>
+                      <p className="text-white font-semibold">+{res.totalNewJobs || 0}</p>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => handleLoadScenario(params.allocations, params.totalBudget, scenario.scenario_name)}
+                    className="w-full py-1.5 rounded-lg bg-accent/15 hover:bg-accent/25 text-accent font-bold text-xs transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Play className="w-3 h-3 text-accent" />
+                    <span>Terapkan Skenario</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Priority Kecamatan Table */}
       <div className="glass-card p-6">
