@@ -460,7 +460,7 @@ export default function PolicySimulationPage() {
                     </div>
                     <div>
                       <span className="text-[9px] text-slate-500">Dampak Rata-Rata</span>
-                      <p className="text-emerald-400 font-bold">+{scenario.impact.toFixed(1)} poin</p>
+                      <p className="text-emerald-400 font-bold">+{Number(scenario.impact || 0).toFixed(1)} poin</p>
                     </div>
                     <div>
                       <span className="text-[9px] text-slate-500">UMKM Terbantu</span>

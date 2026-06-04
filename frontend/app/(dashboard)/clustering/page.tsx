@@ -66,23 +66,23 @@ export default function ClusteringPage() {
               </div>
               <div>
                 <span className="text-slate-400">Avg Score</span>
-                <p className="text-white font-medium">{cluster.avg_score}</p>
+                <p className="text-white font-medium">{Number(cluster.avg_score).toFixed(2)}</p>
               </div>
               <div>
                 <span className="text-slate-400">Infra Score</span>
-                <p className="text-white font-medium">{cluster.infra_score}</p>
+                <p className="text-white font-medium">{Number(cluster.infra_score).toFixed(2)}</p>
               </div>
               <div>
                 <span className="text-slate-400">Digital %</span>
-                <p className="text-white font-medium">{cluster.digital_pct}%</p>
+                <p className="text-white font-medium">{Number(cluster.digital_pct).toFixed(2)}%</p>
               </div>
               <div>
                 <span className="text-slate-400">Survival Rate</span>
-                <p className="text-white font-medium">{cluster.survival_rate}%</p>
+                <p className="text-white font-medium">{Number(cluster.survival_rate).toFixed(2)}%</p>
               </div>
               <div>
                 <span className="text-slate-400">Income (Jt)</span>
-                <p className="text-white font-medium">{cluster.income}</p>
+                <p className="text-white font-medium">{Number(cluster.income).toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -119,7 +119,7 @@ export default function ClusteringPage() {
                     </span>
                   </td>
                   <td className="py-3 px-4 text-right text-slate-300">{item.n_umkm.toLocaleString()}</td>
-                  <td className="py-3 px-4 text-right text-accent font-medium">{item.priority_score.toFixed(3)}</td>
+                  <td className="py-3 px-4 text-right text-accent font-medium">{item.priority_score.toFixed(2)}</td>
                   <td className="py-3 px-4 text-right text-slate-300">{item.budget_pct}%</td>
                 </tr>
               ))}
@@ -158,7 +158,7 @@ export default function ClusteringPage() {
                     </span>
                   </td>
                   <td className="py-3 px-4 text-right text-slate-300">{item.n_umkm.toLocaleString()}</td>
-                  <td className="py-3 px-4 text-right text-accent font-medium">{item.investment_score.toFixed(3)}</td>
+                  <td className="py-3 px-4 text-right text-accent font-medium">{item.investment_score.toFixed(2)}</td>
                   <td className="py-3 px-4 text-right text-slate-300">{item.market_size_juta.toLocaleString()}</td>
                 </tr>
               ))}

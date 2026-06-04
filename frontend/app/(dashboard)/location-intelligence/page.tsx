@@ -235,11 +235,11 @@ export default function LocationIntelligencePage() {
               </div>
               <div>
                 <span className="text-slate-400">Before</span>
-                <p className="text-white font-medium">{simResult.before.toFixed(1)}</p>
+                <p className="text-white font-medium">{simResult.before.toFixed(2)}</p>
               </div>
               <div>
                 <span className="text-slate-400">After</span>
-                <p className="text-emerald-400 font-medium">{simResult.after.toFixed(1)}</p>
+                <p className="text-emerald-400 font-medium">{simResult.after.toFixed(2)}</p>
               </div>
               <div>
                 <span className="text-slate-400">Improvement</span>
@@ -269,8 +269,8 @@ export default function LocationIntelligencePage() {
                 <tr key={i} className="border-b border-slate-800 hover:bg-slate-800/50">
                   <td className="py-3 px-4 text-slate-200">{s.scenario}</td>
                   <td className="py-3 px-4 text-right text-slate-300">{s.affected}</td>
-                  <td className="py-3 px-4 text-right text-slate-300">{s.before.toFixed(1)}</td>
-                  <td className="py-3 px-4 text-right text-accent">{s.after.toFixed(1)}</td>
+                  <td className="py-3 px-4 text-right text-slate-300">{s.before.toFixed(2)}</td>
+                  <td className="py-3 px-4 text-right text-accent">{s.after.toFixed(2)}</td>
                   <td className="py-3 px-4 text-right text-emerald-400">+{s.improvement.toFixed(2)}</td>
                 </tr>
               ))}

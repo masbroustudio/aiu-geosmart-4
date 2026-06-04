@@ -487,7 +487,15 @@ export interface SavedPolicyScenario {
 }
 
 export async function fetchSavedScenarios(): Promise<SavedPolicyScenario[]> {
-  return fetchWithFallback<SavedPolicyScenario[]>('/api/policy/scenarios', []);
+  const data = await fetchWithFallback<any[]>('/api/policy/scenarios', []);
+  return data.map((s: any) => ({
+    ...s,
+    id: Number(s.id),
+    user_id: Number(s.user_id),
+    base_score: Number(s.base_score || 0),
+    simulated_score: Number(s.simulated_score || 0),
+    impact: Number(s.impact || 0)
+  }));
 }
 
 export async function savePolicyScenario(body: {
