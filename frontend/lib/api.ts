@@ -101,7 +101,33 @@ export async function fetchScores(params?: { kabupaten?: string; limit?: number 
 }
 
 export async function fetchCredit() {
-  return fetchWithFallback('/api/credit', creditData);
+  const data = await fetchWithFallback<any>('/api/credit', null);
+  if (data && data.credit_score_bands && data.pd_regulatory_buckets) {
+    const bands = data.credit_score_bands.map((b: any, idx: number) => {
+      const colors = ['#10B981', '#34D399', '#6EE7B7', '#FCD34D', '#F59E0B', '#EF4444', '#991B1B'];
+      return {
+        rating: b.rating || '',
+        scoreRange: b.score_range || '',
+        count: Number(b.count || 0),
+        pctPortfolio: b.pct_of_portfolio || '0%',
+        defaultRate: b.actual_default_rate || '0%',
+        meanPD: b.mean_predicted_pd || '0%',
+        color: colors[idx % colors.length]
+      };
+    });
+
+    const pdBuckets = data.pd_regulatory_buckets.map((b: any) => ({
+      bucket: b['PD Bucket'] || b.bucket || '',
+      count: Number(b['Count'] || b.count || 0),
+      pctPortfolio: b['Pct of Portfolio'] || b.pctPortfolio || '0%',
+      defaultRate: b['Actual Default Rate'] || b.defaultRate || '0%',
+      avgPD: b['Avg Predicted PD'] || b.avgPD || '0%',
+      expectedLoss: b['Expected Loss (EL)'] || b.expectedLoss || '0%',
+    }));
+
+    return { bands, pdBuckets };
+  }
+  return creditData;
 }
 
 export async function fetchClusters() {
@@ -618,7 +644,20 @@ export async function simulateWhatIf(body: {
     if (!res.ok) return null;
     const json = await res.json();
     if (json.success && json.data) {
-      return json.data as WhatIfResponse;
+      const mappedScenarios = (json.data.scenarios || []).map((s: any) => ({
+        scenario: s.scenario || '',
+        affected: s.n_umkm_affected || s.affected || 0,
+        before: s.avg_score_before || s.before || 0,
+        after: s.avg_score_after || s.after || 0,
+        improvement: s.avg_improvement || s.improvement || 0,
+        max_improvement: s.max_improvement || 0,
+        pct_improved: s.pct_improved || 0,
+        above_70: s.n_now_above_70 || s.above_70 || 0,
+      }));
+      return {
+        scenarios: mappedScenarios,
+        input: json.data.input || body
+      };
     }
     return null;
   } catch {

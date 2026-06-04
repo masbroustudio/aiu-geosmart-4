@@ -4,6 +4,8 @@ import * as path from 'path';
 
 const { Pool } = pg;
 let pool: any = null;
+let initPromise: Promise<void> | null = null;
+let dbInitialized = false;
 
 export const getPool = () => {
   if (!pool) {
@@ -32,8 +34,8 @@ export const getPool = () => {
       
       pool = new Pool(config);
       
-      // Trigger schema initialization asynchronously
-      initializeDatabase().catch((err) => {
+      // Trigger schema initialization asynchronously and store the promise
+      initPromise = initializeDatabase().catch((err) => {
         console.error('Async initializeDatabase failed:', err);
       });
     } else {
@@ -50,6 +52,17 @@ export const query = async (text: string, params?: any[]) => {
     console.log('Query (mock):', text);
     return { rows: [], rowCount: 0 };
   }
+
+  // Prevent deadlock: bypass initialization await if the query call stack
+  // originates from initializeDatabase or seedDatabase.
+  const stack = new Error().stack || '';
+  const isInitCall = stack.includes('seedDatabase') || stack.includes('initializeDatabase');
+
+  if (initPromise && !isInitCall && !dbInitialized) {
+    console.log('Awaiting database schema initialization for query...');
+    await initPromise;
+  }
+
   return p.query(text, params);
 };
 
@@ -107,5 +120,6 @@ export const initializeDatabase = async () => {
   } else {
     console.warn('Could not locate schema.sql in any of the search paths:', possiblePaths);
   }
+  dbInitialized = true;
 };
 

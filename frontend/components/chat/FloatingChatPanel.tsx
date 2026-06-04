@@ -85,126 +85,131 @@ function getEnhancedResponse(message: string, persona: Persona): string {
   }
 
   if (lower.includes("portofolio") || lower.includes("portfolio")) {
-    return `**Menu Portfolio Analytics v4.0:**\n\nHalaman Portfolio memantau kesehatan pembiayaan:\n- **Metrik Utama**: Total dana disalurkan (Rp 187.5M), Yield Rata-rata (11.8%), NPL Ratio (4.2%), dan Akumulasi Penyisihan (Rp 8.2M).\n- **Analisis Stres Portofolio**: Menyediakan simulasi stress test (Skenario Ringan, Sedang, Berat) untuk melihat perkiraan lonjakan rasio NPL jika kondisi makroekonomi memburuk.`;
+    return `**Menu Portfolio Analytics v4.0:**\n\nHalaman Portfolio memantau kesehatan pembiayaan:\n- **Metrik Utama**: Total eksposur kredit (Rp 585.0 Miliar), Yield Rata-rata (11.8%), NPL Ratio (4.2%), dan Expected Loss (Rp 175.5 Miliar).\n- **Analisis Stres Portofolio**: Menyediakan simulasi stress test (Skenario Ringan, Sedang, Berat) untuk melihat perkiraan lonjakan rasio NPL jika kondisi makroekonomi memburuk.`;
   }
 
-  // Credit/score queries - check topic keywords BEFORE location names
+  // Credit/score queries
   if (lower.includes('kredit') || lower.includes('credit') || lower.includes('skor') || lower.includes('score')) {
     if (persona === 'bank') {
-      return `**Distribusi Credit Band Portfolio:**\n\n- **AAA** (skor 90-100): 976 UMKM (9.8%) - Default rate 3.9%\n- **AA** (skor 80-90): 1,245 UMKM (12.5%) - Default rate 8.2%\n- **A** (skor 70-80): 1,567 UMKM (15.7%) - Default rate 15.1%\n- **BBB** (skor 60-70): 1,890 UMKM (18.9%) - Default rate 24.3%\n- **BB** (skor 50-60): 1,456 UMKM (14.6%) - Default rate 38.7%\n- **B** (skor 30-50): 1,856 UMKM (18.6%) - Default rate 62.4%\n- **CCC** (skor <30): 1,010 UMKM (10.1%) - Default rate 93.3%\n\n**Rata-rata PD portfolio:** 34.59%\n**Konsentrasi risiko:** Bucket 20-50% (very high risk)\n\n[Sumber: Credit Risk Model]`;
+      return `**Distribusi Credit Band Portfolio:**\n\n- **AAA** (skor 750-850): 976 UMKM (9.8%) - Default rate 3.9%\n- **AA** (skor 700-749): 1,534 UMKM (15.3%) - Default rate 4.2%\n- **A** (skor 650-699): 1,691 UMKM (16.9%) - Default rate 7.5%\n- **BBB** (skor 600-649): 1,549 UMKM (15.5%) - Default rate 12.7%\n- **BB** (skor 550-599): 1,265 UMKM (12.7%) - Default rate 30.2%\n- **B** (skor 450-549): 1,975 UMKM (19.8%) - Default rate 73.5%\n- **CCC/CC/C** (skor 300-449): 1,010 UMKM (10.1%) - Default rate 93.3%\n\n**Rata-rata PD portfolio:** 43.20%\n**Expected Loss:** Rp 175.5 Miliar\n\n[Sumber: Credit Risk Model]`;
     }
-    return `**Credit Scoring Overview:**\n\n- Total UMKM dinilai: ${modelMetrics.totalUmkm.toLocaleString()}\n- Default rate rata-rata: ${modelMetrics.defaultRate}%\n- Survival rate: ${modelMetrics.survivalRate}%\n- Estimasi NPL reduction: ${modelMetrics.nplReduction}%\n\n**Top 3 Faktor Penentu:**\n- Infrastructure score (importance: 0.23)\n- Digital readiness (importance: 0.19)\n- Survival rate historis (importance: 0.17)\n\n[Sumber: Credit Risk Model]`;
+    return `**Credit Scoring Overview:**\n\n- Total UMKM dinilai: 10,000\n- Default rate rata-rata: 32.01%\n- Survival rate: 67.99%\n\n**Top 3 Faktor Penentu (XGBoost SHAP):**\n- 1. Monthly Revenue (omset_bulanan)\n- 2. Revenue per Employee (omset_per_karyawan)\n- 3. Business Age (tahun_berdiri)\n\n[Sumber: Credit Risk Model]`;
   }
 
   // Default/NPL/risk queries
   if (lower.includes('default') || lower.includes('npl') || lower.includes('risiko kredit')) {
-    return `**Analisis Default & NPL:**\n\n- **Default Rate Portfolio:** ${modelMetrics.defaultRate}%\n- **Estimasi NPL Reduction:** ${modelMetrics.nplReduction}% dengan model scoring\n- **Survival Rate Rata-rata:** ${modelMetrics.survivalRate}%\n\n**Distribusi Risiko per Area:**\n- Area urban (Bekasi, Depok): Default rate 15-20%\n- Area semi-urban (Bandung, Cimahi): Default rate 25-35%\n- Area rural (Garut, Sukabumi): Default rate 50-70%\n\n**Faktor Risiko Utama:**\n- Infrastructure score rendah (<50)\n- Digital readiness rendah (<30%)\n- Lokasi rawan bencana\n\n[Sumber: Credit Risk Model]`;
+    return `**Analisis Default & NPL:**\n\n- **Default Rate Portfolio:** 32.01%\n- **Survival Rate Rata-rata:** 67.99%\n- **Rasio NPL Saat Ini:** 4.2%\n\n**Distribusi Risiko per Wilayah (Berdasarkan Data):**\n- Area urban (Kota Depok, Kota Bandung, Kota Bekasi): Skor potensi tinggi (80-82), default rate rendah (~4-8%)\n- Area rural (Kab. Sukabumi, Kab. Garut, Kab. Pangandaran): Skor potensi rendah (28-31), default rate tinggi (>60%)\n\n[Sumber: Credit Risk Model]`;
   }
 
   // Cluster queries
   if (lower.includes('cluster') || lower.includes('klaster') || lower.includes('segmen')) {
     if (persona === 'investor') {
-      const c0 = clusterSummaries[0];
-      return `**Cluster dengan ROI Tertinggi:**\n\n**1. ${c0.name}** (Investment Rank #${c0.investRank})\n- Jumlah UMKM: ${c0.n_umkm.toLocaleString()}\n- Digital adoption: ${c0.characteristics.digital}%\n- Survival rate: ${c0.characteristics.survival}%\n- Avg omset score: ${c0.characteristics.omset}\n\n**Kekuatan:** ${c0.strengths.join(', ')}\n**Peluang:** ${c0.opportunities.join(', ')}\n\n**Ranking Investasi:**\n${clusterSummaries.map(c => `- #${c.investRank} ${c.name} (${c.n_umkm} UMKM)`).join('\n')}\n\n[Sumber: Cluster Analysis, Notebook 02]`;
+      return `**Cluster dengan Peluang Investasi Tertinggi:**\n\n**1. Urban Digital Leaders** (2,368 UMKM, 23.7%)\n- Karakteristik: Kematangan digital tertinggi (74.1%), Survival rate tinggi (71.9%), omset kuat.\n\n**2. Rural Developing** (2,684 UMKM, 26.8%)\n- Karakteristik: Potensi pasar besar, persaingan rendah, namun perlu peningkatan infrastruktur dasar.\n\n**Peringkat Investasi Cluster:**\n- #1 Urban Digital Leaders (Investment Score: 0.962)\n- #2 Rural Developing (Investment Score: 0.525)\n- #3 Urban Digital Leaders (2) (Investment Score: 0.522)\n- #4 High-Risk Underserved (4) (Investment Score: 0.489)\n- #5 High-Risk Underserved (Investment Score: 0.200)\n\n[Sumber: Cluster Analysis]`;
     }
     if (persona === 'government') {
-      const c3 = clusterSummaries[3];
-      return `**Cluster Prioritas Pemerintah:**\n\n**#1 Prioritas: ${c3.name}** (Gov Priority: ${c3.govPriority})\n- Jumlah UMKM: ${c3.n_umkm.toLocaleString()}\n- Infrastructure: ${c3.characteristics.infra}\n- Digital: ${c3.characteristics.digital}%\n- KUR penetration: ${c3.characteristics.kur}%\n\n**Kelemahan:**\n${c3.weaknesses.map(w => `- ${w}`).join('\n')}\n\n**Aksi yang Direkomendasikan:**\n${c3.actions.map(a => `- ${a}`).join('\n')}\n\n**Semua Cluster (by Gov Priority):**\n${[...clusterSummaries].sort((a, b) => a.govPriority - b.govPriority).map(c => `- Priority ${c.govPriority}: ${c.name} (${c.n_umkm} UMKM)`).join('\n')}\n\n[Sumber: Cluster Analysis, Notebook 02]`;
+      return `**Cluster Prioritas Intervensi Pemerintah:**\n\n**#1 Prioritas: High-Risk Underserved** (2,124 UMKM, 21.2%)\n- Karakteristik: Skor infrastruktur terendah (53.1), adopsi digital rendah (31.4%), penetrasi KUR minim.\n- Kelemahan: Kerentanan terhadap default tinggi, sarana internet terbatas.\n\n**Semua Cluster (Berdasarkan Prioritas Pemerintah):**\n- 1. High-Risk Underserved (Priority Score: 0.968, Alokasi Budget: 41.5%)\n- 2. High-Risk Underserved (4) (Priority Score: 0.725, Alokasi Budget: 27.8%)\n- 3. Rural Developing (Priority Score: 0.484, Alokasi Budget: 26.2%)\n- 4. Urban Digital Leaders (2) (Priority Score: 0.191, Alokasi Budget: 3.6%)\n- 5. Urban Digital Leaders (Priority Score: 0.019, Alokasi Budget: 0.9%)\n\n[Sumber: Government Priority Cluster]`;
     }
-    return `**5 Cluster UMKM:**\n\n${clusterSummaries.map(c => `- **${c.name}**: ${c.n_umkm.toLocaleString()} UMKM - ${c.description}`).join('\n')}\n\n**Total UMKM:** ${modelMetrics.totalUmkm.toLocaleString()}\n\n[Sumber: Cluster Analysis, Notebook 02]`;
+    return `**5 Segmentasi Cluster UMKM:**\n- **Rural Developing**: 2,684 UMKM (26.8%)\n- **Urban Digital Leaders**: 2,368 UMKM (23.7%)\n- **High-Risk Underserved**: 2,124 UMKM (21.2%)\n- **High-Risk Underserved (4)**: 1,898 UMKM (19.0%)\n- **Urban Digital Leaders (2)**: 926 UMKM (9.3%)\n\n[Sumber: Cluster Analysis]`;
   }
 
   // Policy/infrastructure queries
   if (lower.includes('kebijakan') || lower.includes('policy') || lower.includes('infrastruktur')) {
     if (persona === 'government') {
-      return `**Simulasi Dampak Kebijakan:**\n\n**1. Infrastructure +30 (di area low-infra):**\n- Target: 2,507 UMKM\n- Avg improvement: **${modelMetrics.policyImpactInfra}** poin\n- UMKM baru di atas skor 70: 244\n\n**2. Digital Training 50%:**\n- Target: 3,200 UMKM\n- Avg improvement: **${modelMetrics.policyImpactDigital}** poin\n- UMKM baru di atas skor 70: 325\n\n**3. KUR Expansion +20:**\n- Target: 4,100 UMKM\n- Avg improvement: **${modelMetrics.policyImpactKUR}** poin\n\n**Rekomendasi:** Prioritaskan infrastructure di cluster High-Risk Underserved\n\n[Sumber: Policy Simulation, Notebook 04]`;
+      return `**Estimasi Dampak Intervensi Anggaran:**\n\n- **Program Infrastruktur (+30 poin)**: Target 2,507 UMKM terdampak, estimasi skor potensi naik +12.4 poin.\n- **Program Pelatihan Digital**: Target 3,200 UMKM terdampak, estimasi skor potensi naik +8.7 poin.\n- **Ekspansi Penetrasi KUR (+20%)**: Target 4,100 UMKM terdampak, penurunan tingkat default yang signifikan.\n\n*Rekomendasi*: Alokasikan anggaran terbesar (41.5%) ke cluster High-Risk Underserved untuk efektivitas intervensi.\n\n[Sumber: Policy Simulation]`;
     }
-    return `**Dampak Kebijakan Infrastruktur:**\n\n- Infrastructure +30: avg improvement **${modelMetrics.policyImpactInfra}** poin\n- Digital Training: avg improvement **${modelMetrics.policyImpactDigital}** poin\n- KUR Expansion: avg improvement **${modelMetrics.policyImpactKUR}** poin\n\nInfrastructure memiliki dampak terbesar terhadap skor UMKM.\n\n[Sumber: Policy Simulation, Notebook 04]`;
+    return `**Estimasi Dampak Kebijakan:**\n- Peningkatan Infrastruktur: Peningkatan skor potensi rata-rata sebesar +12.4 poin.\n- Pelatihan Digitalisasi: Peningkatan skor potensi rata-rata sebesar +8.7 poin.\n\n[Sumber: Policy Simulation]`;
   }
 
   // Budget queries
   if (lower.includes('budget') || lower.includes('anggaran')) {
-    return `**Alokasi Budget per Cluster (Rekomendasi):**\n\n- **High-Risk Underserved** (Cluster 3): 41.5% - Prioritas infrastruktur\n- **High-Risk Underserved 4** (Cluster 4): 27.8% - Risk mitigation\n- **Rural Developing** (Cluster 1): 18.2% - Digital literacy\n- **Urban Digital Leaders 2** (Cluster 2): 7.5% - Scale-up\n- **Urban Digital Leaders** (Cluster 0): 5.0% - Market expansion\n\n**Total UMKM target:** ${modelMetrics.totalUmkm.toLocaleString()}\n**Focus area:** Infrastructure & digital transformation di area underserved\n\n[Sumber: Policy Simulation, Notebook 04]`;
+    return `**Rekomendasi Alokasi Anggaran Pemerintah:**\n\n- **High-Risk Underserved**: 41.5% (Fokus pembangunan jalan, pasar, & internet)\n- **High-Risk Underserved (4)**: 27.8% (Fokus mitigasi risiko bencana & KUR)\n- **Rural Developing**: 26.2% (Fokus perluasan jangkauan digital & literasi)\n- **Urban Digital Leaders (2)**: 3.6% (Fokus perluasan akses fintech & modal kerja)\n- **Urban Digital Leaders**: 0.9% (Fokus scale-up ekspor & komersialisasi digital)\n\n[Sumber: Government Budget Allocation Rules]`;
   }
 
   // Investment/ROI queries
   if (lower.includes('investasi') || lower.includes('invest') || lower.includes('roi')) {
-    return `**Peluang Investasi UMKM:**\n\n**Top Cluster untuk Investasi:**\n- #1 Urban Digital Leaders: Investment score **0.962**\n  - Market size: Rp 182.2M\n  - Digital adoption: 74.1%\n  - Survival: 71.9%\n\n- #2 Rural Developing: Investment score **0.834**\n  - Market size: Rp 138.0M\n  - Growth potential: High\n\n**Market Size Total:** Rp ${modelMetrics.marketSizeAnnual.toLocaleString()}M/tahun\n\n**Risiko:**\n- Area rural: Higher default (50-70%), butuh infrastruktur\n- Area urban: Kompetisi tinggi, margin lebih tipis\n\n[Sumber: Investment Analysis, Notebook 05]`;
+    return `**Peluang Investasi Wilayah (Investor Mode):**\n\n- **Kota Depok**: Skor Potensi 82.08 (Kompetisi tinggi, daya beli tinggi, digital leaders)\n- **Kota Bandung**: Skor Potensi 81.61 (Daya beli tinggi, hub kreatif & fashion)\n- **Kota Bekasi**: Skor Potensi 80.29 (Daya beli tinggi, klaster logistik & makanan)\n\n*Risiko*: Sektor makanan memiliki kompetisi tertinggi (39.71% proporsi portofolio), sedangkan sektor pertanian memiliki potensi pertumbuhan tinggi dengan kompetisi rendah (hanya 9.93% proporsi).\n\n[Sumber: Investment Opportunity Analysis]`;
   }
 
   // Market/revenue queries
   if (lower.includes('market') || lower.includes('pasar') || lower.includes('omset')) {
-    return `**Market Size & Revenue UMKM:**\n\n- **Total Market Size:** Rp ${modelMetrics.marketSizeAnnual.toLocaleString()}M/tahun\n- **Rata-rata Omset Score:** ${modelMetrics.avgScore}\n\n**Per Cluster:**\n${clusterSummaries.map(c => `- ${c.name}: Omset score ${c.characteristics.omset} (${c.n_umkm} UMKM)`).join('\n')}\n\n**Area Tertinggi:**\n- Kota Bekasi: avg score 85.2\n- Kota Depok: avg score 82.7\n- Kota Bandung: avg score 79.4\n\n[Sumber: Market Analysis]`;
+    return `**Market Size & Profil Sektor UMKM:**\n\n- **Total UMKM Aktif**: 10,000 UMKM\n- **Rata-rata Skor Potensi Wilayah**: 56.20/100\n- **Daya Beli Terkuat**: Kota Depok (82.08) & Kota Bandung (81.61)\n\n**Proporsi Sektor Usaha:**\n- Makanan: 3,971 UMKM (39.71%)\n- Fashion: 2,026 UMKM (20.26%)\n- Kerajinan: 1,515 UMKM (15.15%)\n- Jasa: 1,495 UMKM (14.95%)\n- Pertanian: 993 UMKM (9.93%)\n\n[Sumber: Market Aggregations]`;
   }
 
   // Digital readiness queries
   if (lower.includes('digital') || lower.includes('internet') || lower.includes('teknologi')) {
-    return `**Digital Readiness UMKM:**\n\n**Per Cluster:**\n${clusterSummaries.map(c => `- ${c.name}: **${c.characteristics.digital}%** digital adoption`).join('\n')}\n\n**Gap Analysis:**\n- Urban areas: 65-74% digital adoption\n- Rural areas: 31-42% digital adoption\n- Gap: ~35 percentage points\n\n**Dampak Digital Training:**\n- Avg score improvement: ${modelMetrics.policyImpactDigital} poin\n- UMKM baru di atas skor 70: 325\n\n**Rekomendasi:** Digital literacy programs di cluster Rural Developing & High-Risk Underserved\n\n[Sumber: Digital Readiness Analysis]`;
+    return `**Analisis Adopsi Digital UMKM:**\n\n- **Klaster Digital Tertinggi**: Urban Digital Leaders (74.1% digital adoption)\n- **Klaster Digital Terendah**: High-Risk Underserved (31.4% digital adoption)\n- **Rekomendasi Intervensi**: Program literasi digital di area rural (Kab. Pangandaran (28.92 avg score) & Kab. Sukabumi (30.44 avg score)).\n\n[Sumber: Digital Readiness Index]`;
   }
 
   // Recommendation queries
   if (lower.includes('rekomendasi') || lower.includes('recommend')) {
-    const recs = persona === 'bank'
-      ? `**Rekomendasi untuk Bank:**\n\n- **Ekspansi kredit** di area skor >80 (Bekasi, Depok)\n- **Hindari** area dengan default rate >50% tanpa mitigasi\n- **Target NPL reduction:** ${modelMetrics.nplReduction}%\n- **Focus:** UMKM di credit band A-AAA untuk portfolio growth\n- **Opportunity:** KUR expansion di cluster with low penetration (19.2%)`
-      : persona === 'government'
-      ? `**Rekomendasi untuk Pemerintah:**\n\n- **Prioritas 1:** Infrastructure development di High-Risk Underserved\n- **Prioritas 2:** Digital literacy programs di Rural Developing\n- **Prioritas 3:** KUR expansion di area low-penetration\n- **Budget focus:** 41.5% untuk cluster High-Risk Underserved\n- **Target:** 569 UMKM naik di atas skor 70`
-      : `**Rekomendasi untuk Investor:**\n\n- **Top pick:** Urban Digital Leaders (score 0.962)\n- **Growth play:** Rural Developing (high potential, moderate risk)\n- **Market size:** Rp ${modelMetrics.marketSizeAnnual.toLocaleString()}M/tahun\n- **Avoid:** High-Risk Underserved tanpa government support\n- **Sektor terbaik:** Makanan & Fashion di area urban`;
-    return `${recs}\n\n[Sumber: GeoUMKM Intelligence Analysis]`;
+    if (persona === 'bank') {
+      return `**Rekomendasi untuk Bank:**\n- **Ekspansi KUR**: Fokus pada kecamatan dengan skor potensi >70 dan penetrasi KUR saat ini masih rendah.\n- **Penyaringan Risiko**: Gunakan threshold credit score 650 (Rating A ke atas) untuk persetujuan kredit otomatis.\n- **Mitigasi NPL**: Terapkan syarat jaminan tambahan untuk UMKM di cluster High-Risk Underserved.`;
+    }
+    if (persona === 'government') {
+      return `**Rekomendasi untuk Pemerintah:**\n- **Fokus Infrastruktur**: Pembangunan internet desa di Garut & Sukabumi.\n- **Alokasi Anggaran**: Salurkan 41.5% anggaran pembangunan ke cluster High-Risk Underserved.\n- **KUR Terarah**: Subsidi bunga kredit khusus untuk UMKM di sektor pertanian (sektor terkecil 9.93%).`;
+    }
+    return `**Rekomendasi untuk Investor:**\n- **Top Opportunity**: Cari UMKM di Kota Depok & Kota Bandung (Skor > 81).\n- **High Growth Sektor**: Investasi di sektor Pertanian & Jasa yang kompetisinya masih rendah.\n- **Digital Play**: Prioritaskan UMKM di cluster Urban Digital Leaders untuk efisiensi investasi.`;
   }
 
   // Model/algorithm queries
   if (lower.includes('model') || lower.includes('algoritma') || lower.includes('machine learning')) {
-    return `**Model & Algoritma GeoUMKM:**\n\n**Credit Risk Model:**\n- Algorithm: Gradient Boosting (XGBoost)\n- AUC-ROC: 0.847\n- Features: 15 variabel\n\n**Location Scoring:**\n- Algorithm: Weighted composite scoring\n- Dimensions: 6 (infrastructure, digital, survival, income, omset, KUR)\n- Coverage: ${modelMetrics.kecamatanCount} kecamatan\n\n**Clustering:**\n- Algorithm: K-Means (k=5)\n- Silhouette score: 0.42\n- Top cluster score: ${modelMetrics.topClusterScore}\n\n**Total Data:** ${modelMetrics.totalUmkm.toLocaleString()} UMKM\n\n[Sumber: Model Documentation]`;
+    return `**Spesifikasi Model Machine Learning GeoUMKM:**\n\n- **Credit Scoring**: Model XGBoost Classifier (prediksi kelangsungan hidup 3 tahun, default rate portfolio 32.01%).\n- **Location Scoring**: Model Random Forest Regressor (prediksi skor potensi 0-100, R2 = 0.81).\n- **Clustering**: Algoritma K-Means (k=5) + DBSCAN untuk segmentasi profil wilayah.\n\n[Sumber: ML Pipeline Documentation]`;
   }
 
   // UMKM general queries
   if (lower.includes('umkm') || lower.includes('usaha')) {
-    return `**Statistik UMKM:**\n\n- **Total UMKM:** ${modelMetrics.totalUmkm.toLocaleString()}\n- **Kecamatan:** ${modelMetrics.kecamatanCount}\n- **Avg Score:** ${modelMetrics.avgScore}/100\n- **Survival Rate:** ${modelMetrics.survivalRate}%\n- **Default Rate:** ${modelMetrics.defaultRate}%\n\n**Distribusi per Cluster:**\n${clusterSummaries.map(c => `- ${c.name}: ${c.n_umkm.toLocaleString()} UMKM`).join('\n')}\n\n[Sumber: GeoUMKM Database]`;
+    return `**Profil Umum UMKM Jawa Barat (10,000 data):**\n- **Sektor Utama**: Makanan (39.71%) & Fashion (20.26%)\n- **Tingkat Kelangsungan Hidup**: 67.99%\n- **Rata-rata Skor Potensi**: 56.20\n- **Kabupaten Terbaik**: Kota Depok (82.08 avg score)\n- **Kabupaten Terendah**: Kab. Pangandaran (28.92 avg score)`;
   }
 
   // Priority queries
   if (lower.includes('prioritas') || lower.includes('priority')) {
-    return `**Prioritas Kecamatan:**\n\n**Prioritas Intervensi (skor rendah, potensi tinggi):**\n- Sagaranten, Sukabumi: Skor 1.36 - Butuh infrastruktur dasar\n- Cisompet, Garut: Skor 6.82 - Butuh digital literacy\n- Area rural Garut & Sukabumi: avg skor 28-35\n\n**Prioritas Ekspansi (skor tinggi):**\n- Pondok Gede, Bekasi: Skor 94.85\n- Bekasi Selatan: Skor 92.0\n- Astana Anyar, Bandung: Skor 90.6\n\n**Cluster Prioritas Pemerintah:**\n${[...clusterSummaries].sort((a, b) => a.govPriority - b.govPriority).map(c => `- Priority ${c.govPriority}: ${c.name}`).join('\n')}\n\n[Sumber: Priority Analysis]`;
+    return `**Daftar Prioritas Pembangunan & Investasi:**\n\n**Top 3 Kabupaten Prioritas Pemerintah (Skor Terendah):**\n- 1. Kab. Pangandaran (28.92/100)\n- 2. Kab. Sukabumi (30.44/100)\n- 3. Kab. Garut (31.63/100)\n\n**Top 3 Kabupaten Prioritas Investasi (Skor Tertinggi):**\n- 1. Kota Depok (82.08/100)\n- 2. Kota Bandung (81.61/100)\n- 3. Kota Bekasi (80.29/100)\n\n[Sumber: Spatial Priority Index]`;
   }
 
   // Sector queries
   if (lower.includes('makanan') || lower.includes('fashion') || lower.includes('kerajinan') || lower.includes('jasa') || lower.includes('pertanian')) {
     const sector = lower.includes('makanan') ? 'Makanan' : lower.includes('fashion') ? 'Fashion' : lower.includes('kerajinan') ? 'Kerajinan' : lower.includes('jasa') ? 'Jasa' : 'Pertanian';
-    const sectorData: Record<string, { pct: string; avg: string; best: string; risk: string }> = {
-      'Makanan': { pct: '35%', avg: '62.4', best: 'Kota Bekasi, Kota Bandung', risk: 'Kompetisi tinggi' },
-      'Fashion': { pct: '22%', avg: '58.1', best: 'Kota Bandung, Kota Cimahi', risk: 'Tren berubah cepat' },
-      'Kerajinan': { pct: '15%', avg: '52.3', best: 'Kab. Bandung, Kota Bandung', risk: 'Market terbatas' },
-      'Jasa': { pct: '18%', avg: '55.7', best: 'Kota Bekasi, Kota Depok', risk: 'Ketergantungan SDM' },
-      'Pertanian': { pct: '10%', avg: '41.2', best: 'Kab. Bogor, Kab. Sukabumi', risk: 'Cuaca & supply chain' },
+    const sectorData: Record<string, { count: string; pct: string; desc: string }> = {
+      'Makanan': { count: '3,971', pct: '39.71%', desc: 'Sektor terbesar, persaingan ketat di urban area, profit margin stabil.' },
+      'Fashion': { count: '2,026', pct: '20.26%', desc: 'Sektor fashion berpusat di Bandung, sensitif terhadap tren digital.' },
+      'Kerajinan': { count: '1,515', pct: '15.15%', desc: 'Adopsi digital penting untuk ekspansi pasar nasional/internasional.' },
+      'Jasa': { count: '1,495', pct: '14.95%', desc: 'Tumbuh subur di Depok & Bekasi seiring urbanisasi.' },
+      'Pertanian': { count: '993', pct: '9.93%', desc: 'Sektor terkecil, potensi pembiayaan KUR tinggi, terpusat di Bogor & Sukabumi.' },
     };
     const d = sectorData[sector];
-    return `**Sektor ${sector}:**\n\n- **Proporsi:** ${d.pct} dari total UMKM\n- **Avg Score:** ${d.avg}/100\n- **Area Terbaik:** ${d.best}\n- **Risiko Utama:** ${d.risk}\n\n**Rekomendasi:**\n- Focus di area urban untuk ${sector} (higher survival)\n- Digital marketing adoption meningkatkan omset 20-30%\n- KUR penetration masih rendah di sektor ini\n\n[Sumber: Sector Analysis]`;
+    return `**Analisis Sektor ${sector}:**\n- Jumlah UMKM: ${d.count} (${d.pct} dari total portfolio)\n- Karakteristik: ${d.desc}\n\n[Sumber: Sektor Profile Aggregation]`;
   }
 
-  // Location queries (general keyword)
+  // Location queries
   if (lower.includes('lokasi') || lower.includes('location') || lower.includes('kecamatan')) {
-    return `**Top & Bottom Lokasi UMKM:**\n\n**Top 5:**\n- Pondok Gede, Kota Bekasi: **94.85**/100\n- Bekasi Selatan, Kota Bekasi: **92.0**/100\n- Astana Anyar, Kota Bandung: **90.6**/100\n- Cilodong, Kota Depok: **90.3**/100\n- Rancasari, Kota Bandung: **87.6**/100\n\n**Bottom 3:**\n- Sagaranten, Kab. Sukabumi: **1.36**/100\n- Cisompet, Kab. Garut: **6.82**/100\n\n**Faktor utama:** Infrastructure score & digital readiness\n**Total kecamatan dianalisis:** ${modelMetrics.kecamatanCount}\n\n[Sumber: Location Scoring, Notebook 03]`;
+    return `**Analisis Wilayah Tingkat Kabupaten:**\n- **Skor Tertinggi**: Kota Depok (82.08) & Kota Bandung (81.61)\n- **Skor Terendah**: Kab. Sukabumi (30.44) & Kab. Pangandaran (28.92)\n\n*Catatan*: Pembangunan jaringan internet dan akses jalan utama berkorelasi kuat (>0.72) dengan kenaikan skor potensi di kabupaten-kabupaten terbawah.`;
   }
 
-  // Check specific kecamatan names (after all topic keywords)
-  for (const [name, data] of Object.entries(locationHighlights)) {
+  // Specific Kabupaten queries
+  for (const name of ['depok', 'bandung', 'bekasi', 'cimahi', 'banjar', 'tasikmalaya', 'ciamis', 'garut', 'sukabumi', 'pangandaran']) {
     if (lower.includes(name)) {
-      return `**${name.charAt(0).toUpperCase() + name.slice(1)}** - ${data.kabupaten}\n\n**Skor Lokasi:** ${data.score}/100\n\n**Kekuatan:**\n${data.strengths.map(s => `- ${s}`).join('\n')}\n\n**Risiko:**\n${data.risks.map(r => `- ${r}`).join('\n')}\n\n[Sumber: Location Scoring, Notebook 03]`;
-    }
-  }
-
-  // Check kabupaten names (after all topic keywords)
-  for (const [name, data] of Object.entries(kabupatenSummaries)) {
-    if (lower.includes(name)) {
-      return `**Kabupaten ${name.charAt(0).toUpperCase() + name.slice(1)}**\n\n**Rata-rata Skor:** ${data.avgScore}/100\n**Jumlah UMKM:** ${data.umkmCount.toLocaleString()}\n**Faktor Kunci:** ${data.keyFactor}\n\n**Top Kecamatan:**\n${data.topKecamatan.map(k => `- ${k}`).join('\n')}\n\n[Sumber: Location Scoring, Notebook 03]`;
+      const kabData: Record<string, { avg: string; status: string; count: string }> = {
+        'depok': { avg: '82.08', status: 'Sangat Tinggi (Hub Urban Digital)', count: 'Depok & Depok Baru' },
+        'bandung': { avg: '81.61', status: 'Sangat Tinggi (Pusat Industri Kreatif & Kuliner)', count: 'Astana Anyar & Coblong' },
+        'bekasi': { avg: '80.29', status: 'Tinggi (Klaster Perdagangan & Jasa)', count: 'Pondok Gede & Bekasi Selatan' },
+        'cimahi': { avg: '73.96', status: 'Tinggi (Wilayah suburban berkembang)', count: 'Cimahi Tengah' },
+        'banjar': { avg: '65.77', status: 'Sedang (Area agribisnis)', count: 'Kecamatan Banjar' },
+        'tasikmalaya': { avg: '35.18', status: 'Rendah (Butuh peningkatan digitalisasi)', count: 'Bantarkalong & Culamega' },
+        'ciamis': { avg: '32.88', status: 'Rendah (Butuh intervensi KUR)', count: 'Cidolog' },
+        'garut': { avg: '31.63', status: 'Sangat Rendah (Prioritas infrastruktur & internet)', count: 'Cisompet, Cihurip, Singajaya' },
+        'sukabumi': { avg: '30.44', status: 'Sangat Rendah (Butuh akses perbankan & jalan)', count: 'Sagaranten, Cicurug, Cidahu' },
+        'pangandaran': { avg: '28.92', status: 'Sangat Rendah (Prioritas internet desa & pelatihan)', count: 'Langkaplancar' },
+      };
+      const kd = kabData[name];
+      return `**Analisis Regional Kabupaten/Kota ${name.toUpperCase()}:**\n- **Rata-rata Skor Potensi**: ${kd.avg}/100\n- **Klasifikasi**: ${kd.status}\n- **Kecamatan Sorotan**: ${kd.count}\n\n[Sumber: Spatial Analysis, Notebook 03]`;
     }
   }
 
   // Default responses
   const defaults: Record<Persona, string> = {
-    bank: `Saya bisa membantu analisis **credit scoring**, **PD estimation**, dan **risk assessment** portfolio UMKM.\n\nTopik yang bisa ditanyakan:\n- Distribusi credit band & default rate\n- Analisis risiko per area/cluster\n- Rekomendasi lokasi ekspansi\n- NPL reduction estimation\n- Faktor penentu credit score\n\nSilakan tanya topik spesifik!`,
-    government: `Saya bisa membantu analisis **kebijakan**, **prioritas wilayah**, dan **simulasi dampak** intervensi.\n\nTopik yang bisa ditanyakan:\n- Priority kecamatan untuk intervensi\n- Budget allocation per cluster\n- Policy simulation (infrastructure, digital, KUR)\n- Dampak program per area\n- Cluster analysis & SWOT\n\nSilakan tanya topik spesifik!`,
-    investor: `Saya bisa membantu analisis **peluang investasi**, **market sizing**, dan **cluster profiling**.\n\nTopik yang bisa ditanyakan:\n- ROI per cluster & area\n- Market size estimation\n- Digital adoption trends\n- Risk-return analysis\n- Sektor UMKM terbaik\n\nSilakan tanya topik spesifik!`,
+    bank: `Saya asisten AI GeoUMKM (Bank Mode). Saya dapat membantu Anda menganalisis **credit scoring**, **probability of default (PD)**, dan **Expected Loss (EL)** portofolio kredit UMKM.\n\nTopik populer:\n- Distribusi credit score band (AAA hingga CCC)\n- Portofolio Expected Loss (Base EL Rp 175.5M dengan LGD 70%)\n- Wilayah default rate kritis (>60% di Sukabumi & Garut)\n- Pemicu utama default (XGBoost SHAP features)\n\nSilakan ajukan pertanyaan Anda!`,
+    government: `Saya asisten AI GeoUMKM (Government Mode). Saya siap membantu Anda menyimulasikan kebijakan anggaran daerah dan mengidentifikasi area prioritas pembangunan.\n\nTopik populer:\n- Cluster Prioritas Pemberdayaan (High-Risk Underserved - Budget 41.5%)\n- Peningkatan skor potensi dengan intervensi infrastruktur\n- Kecamatan prioritas dengan skor terendah (Pangandaran, Sukabumi)\n- Analisis kesenjangan digital (digital gap urban vs rural)\n\nSilakan ajukan pertanyaan Anda!`,
+    investor: `Saya asisten AI GeoUMKM (Investor Mode). Saya dapat memberikan wawasan pasar, estimasi market size, dan ROI berdasarkan model machine learning.\n\nTopik populer:\n- Klaster investasi terbaik (Urban Digital Leaders, score 0.962)\n- Kabupaten dengan skor potensi tertinggi (Kota Depok & Kota Bandung)\n- Proporsi sektor usaha paling prospektif (Pertanian & Jasa)\n- Analisis risiko berbanding imbal hasil (risk-return profile)\n\nSilakan ajukan pertanyaan Anda!`,
   };
 
   return defaults[persona];

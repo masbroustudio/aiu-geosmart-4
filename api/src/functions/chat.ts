@@ -133,11 +133,11 @@ async function executeTool(name: string, args: any): Promise<string> {
       case "get_portfolio_summary": {
         return JSON.stringify({
           success: true,
-          total_umkm: 8439,
-          total_exposure: "Rp 187.5 Miliar",
-          weighted_average_pd: "4.8%",
+          total_umkm: 10000,
+          total_exposure: "Rp 585 Miliar",
+          weighted_average_pd: "43.2%",
           npl_ratio: "4.2%",
-          expected_loss: "Rp 7.8 Miliar",
+          expected_loss: "Rp 175.5 Miliar",
           yield: "11.8%"
         });
       }
@@ -299,7 +299,7 @@ async function handler(request: HttpRequest, context: InvocationContext): Promis
         jsonBody: {
           success: true,
           data: {
-            response: "**Menu Portfolio Analytics v4.0:**\n\nHalaman Portfolio memantau kesehatan pembiayaan:\n- **Metrik Utama**: Total dana disalurkan (Rp 187.5M), Yield Rata-rata (11.8%), NPL Ratio (4.2%), dan Akumulasi Penyisihan (Rp 8.2M).\n- **Analisis Stres Portofolio**: Menyediakan simulasi stress test (Skenario Ringan, Sedang, Berat) untuk melihat perkiraan lonjakan rasio NPL jika kondisi makroekonomi memburuk.",
+            response: "**Menu Portfolio Analytics v4.0:**\n\nHalaman Portfolio memantau kesehatan pembiayaan:\n- **Metrik Utama**: Total eksposur kredit (Rp 585 Miliar), Yield Rata-rata (11.8%), NPL Ratio (4.2%), dan Expected Loss (Rp 175.5 Miliar).\n- **Analisis Stres Portofolio**: Menyediakan simulasi stress test (Skenario Ringan, Sedang, Berat) untuk melihat perkiraan lonjakan rasio NPL jika kondisi makroekonomi memburuk.",
             intent: "portfolio_feature",
             sources: ["portfolio_page"]
           }
@@ -349,7 +349,7 @@ You are an AGENTIC assistant who has access to backend tools to query live stati
 Here is the context of GeoUMKM Smart v4.0 features and menus:
 - Overview: Executive metrics summary, interactive mapping, cluster status, top kabupaten.
 - Credit Scoring: AAA to CCC rating bands, probability of default (PD), XGBoost models, explainable AI SHAP force plots. Includes an interactive Credit Scoring Calculator.
-- Portfolio Analytics: total disalurkan (Rp 187.5M), Yield (11.8%), NPL (4.2%), expected loss. Features a dynamic macroeconomic stress-testing slider.
+- Portfolio Analytics: Total eksposur kredit (Rp 585 Miliar), Yield Rata-rata (11.8%), NPL Ratio (4.2%), Expected Loss (Rp 175.5 Miliar). Features a dynamic macroeconomic stress-testing slider.
 - Location Intelligence: potential location matching based on sectors, policy simulation radar.
 - Clustering: 5 segmentations of UMKM based on digital maturity & infrastructure.
 - Policy Simulation: dynamic budget simulations.
