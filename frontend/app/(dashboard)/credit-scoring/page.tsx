@@ -18,6 +18,7 @@ import { creditData as staticCreditData, shapExplanations } from '@/lib/static-d
 import { fetchCredit, scoreCreditRisk, CreditScoreResponse } from '@/lib/api';
 import DownloadCSVButton from '@/components/ui/DownloadCSVButton';
 import SHAPWaterfallChart from '@/components/dashboard/SHAPWaterfallChart';
+import SHAPInteractiveWaterfall from '@/components/dashboard/SHAPInteractiveWaterfall';
 import { useToast } from '@/lib/toast-context';
 
 const riskDistribution = [
@@ -317,15 +318,8 @@ export default function CreditScoringPage() {
                     <Sparkles className="w-3.5 h-3.5 text-accent" />
                     <span>Kontribusi Fitur (SHAP)</span>
                   </span>
-                  <div className="space-y-1.5 flex-1 max-h-[140px] overflow-y-auto scrollbar-thin">
-                    {shapContribs.map((c, i) => (
-                      <div key={i} className="flex justify-between items-center text-[10px]">
-                        <span className="text-slate-400 truncate max-w-[120px]">{c.name}</span>
-                        <span className={`font-semibold ${c.isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {c.isPositive ? `+${c.value}` : `-${c.value}`}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="mt-1">
+                    <SHAPInteractiveWaterfall contributions={shapContribs} finalScore={scoringResult.credit_score} />
                   </div>
                 </div>
               </div>
