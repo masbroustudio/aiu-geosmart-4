@@ -424,3 +424,28 @@ export function getKnowledgeBase(): KnowledgeBase {
   }
   return knowledgeBase;
 }
+
+let clusterSummaries: any[] | null = null;
+let modelInsights: any | null = null;
+let locationProfiles: any[] | null = null;
+
+export function getClusterSummaries(): any[] {
+  if (!clusterSummaries) {
+    clusterSummaries = loadJSON<any[]>("knowledge_base/cluster_summaries.json");
+  }
+  return clusterSummaries;
+}
+
+export function getModelInsights(): any {
+  if (!modelInsights) {
+    modelInsights = loadJSON<any>("knowledge_base/model_insights.json");
+  }
+  return modelInsights;
+}
+
+export function getLocationProfiles(): any[] {
+  if (!locationProfiles) {
+    locationProfiles = loadJSON<any[]>("knowledge_base/location_profiles.json");
+  }
+  return locationProfiles;
+}

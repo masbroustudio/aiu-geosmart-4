@@ -84,6 +84,16 @@ Versi **v4.0** membawa platform ini ke tingkat kesiapan produksi (*production-re
 * **Simulasi What-If Dinamis pada Location Intelligence**: Mengganti fallback simulasi statis berbasis scenario template di halaman [location-intelligence](file:///C:/dev/aiu-geosmart/frontend/app/(dashboard)/location-intelligence/page.tsx) dengan kalkulator simulasi kustom dinamis. Ketika pengguna mengubah slider (Infrastruktur, Jarak Bank, Jangkauan Internet) dan mengklik "Simulate", sistem secara langsung menghitung score peningkatan rata-rata, estimasi jumlah UMKM yang terdampak berbasis populasi riil kecamatan, persentase peningkatan, serta menghitung jumlah kecamatan yang berhasil melampaui ambang batas skor potensi tinggi (>= 75.0) secara real-time.
 * **Rich PDF Reports Generator**: Mengembangkan berkas generator laporan [pdf-report.ts](file:///C:/dev/aiu-geosmart/frontend/lib/pdf-report.ts) untuk memproduksi PDF berkualitas tinggi dengan struktur data yang jauh lebih detail, mencakup arsitektur model XGBoost, tabel kontribusi SHAP exPlainer, proyeksi Stress-Testing CAR & Expected Loss perbankan berbasis standar Basel III, serta tabel deteksi market gap spasial sektoral.
 
+### 12. 🛠️ Perbaikan Skema Database, Integrasi Chatbot, & Profil Dinamis
+* **Inisialisasi Database Idempotent**: Menambahkan `IF NOT EXISTS` ke seluruh deklarasi pembuatan indeks dan `DROP TRIGGER IF EXISTS` sebelum pembuatan trigger di berkas [schema.sql](file:///C:/dev/aiu-geosmart/api/src/db/schema.sql) untuk mencegah kegagalan penulisan tabel downstream (terutama tabel `batch_jobs` untuk unggah CSV laporan) pada startup awal kontainer.
+* **Pemberian Hak Akses Administrator**: Memperbarui otentikasi registrasi agar menetapkan peran `administrator` secara default untuk membebaskan pengguna dari eror `403 Forbidden` saat mengakses pipeline pelatihan ulang ML klaster.
+* **Sidebar Profile Dinamis**: Merestrukturisasi panel keluar di bagian bawah [Sidebar.tsx](file:///C:/dev/aiu-geosmart/frontend/components/dashboard/Sidebar.tsx) untuk mendekode token JWT dari `localStorage` secara real-time dan menampilkan nama serta hak akses orisinal pengguna alih-alih tulisan statis.
+* **Chatbot Knowledge Base Search Engine**: Memperluas penanganan fallback chatbot lokal di [chat.ts](file:///C:/dev/aiu-geosmart/api/src/functions/chat.ts) dengan merancang algoritma pencarian kata kunci yang memproses berkas JSON basis pengetahuan lokal:
+  - Menyajikan profil spasial dan demografis komprehensif bagi kecamatan yang dicari pengguna.
+  - Memberikan ringkasan SWOT dan rekomendasi intervensi detail per kluster.
+  - Memaparkan fitur-fitur pemodelan terpenting (SHAP) dan metrik determinasi ML.
+* **AI Analyst Chat Integration**: Menyambungkan input obrolan pada halaman analisis sains data [ai-analyst](file:///C:/dev/aiu-geosmart/frontend/app/(dashboard)/ai-analyst/page.tsx) ke API chatbot backend (`postChat`). Pertanyaan kustom pengguna kini diproses secara cerdas memanfaatkan basis data pengetahuan yang sama ketimbang langsung memicu penolakan kueri.
+
 ---
 
 

@@ -106,17 +106,17 @@ CREATE TABLE IF NOT EXISTS reports (
 );
 
 -- Create indexes for performance
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_role ON users(role);
-CREATE INDEX idx_api_keys_user_id ON api_keys(user_id);
-CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
-CREATE INDEX idx_audit_logs_action ON audit_logs(action);
-CREATE INDEX idx_umkm_scorings_user_id ON umkm_scorings(user_id);
-CREATE INDEX idx_umkm_scorings_created_at ON umkm_scorings(created_at);
-CREATE INDEX idx_portfolios_user_id ON portfolios(user_id);
-CREATE INDEX idx_portfolio_items_portfolio_id ON portfolio_items(portfolio_id);
-CREATE INDEX idx_whatif_scenarios_user_id ON whatif_scenarios(user_id);
-CREATE INDEX idx_reports_user_id ON reports(user_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_umkm_scorings_user_id ON umkm_scorings(user_id);
+CREATE INDEX IF NOT EXISTS idx_umkm_scorings_created_at ON umkm_scorings(created_at);
+CREATE INDEX IF NOT EXISTS idx_portfolios_user_id ON portfolios(user_id);
+CREATE INDEX IF NOT EXISTS idx_portfolio_items_portfolio_id ON portfolio_items(portfolio_id);
+CREATE INDEX IF NOT EXISTS idx_whatif_scenarios_user_id ON whatif_scenarios(user_id);
+CREATE INDEX IF NOT EXISTS idx_reports_user_id ON reports(user_id);
 
 -- Create updater function for updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -128,18 +128,22 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Apply updater trigger to users
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Apply updater trigger to api_keys
+DROP TRIGGER IF EXISTS update_api_keys_updated_at ON api_keys;
 CREATE TRIGGER update_api_keys_updated_at BEFORE UPDATE ON api_keys
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Apply updater trigger to portfolios
+DROP TRIGGER IF EXISTS update_portfolios_updated_at ON portfolios;
 CREATE TRIGGER update_portfolios_updated_at BEFORE UPDATE ON portfolios
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Apply updater trigger to umkm_scorings
+DROP TRIGGER IF EXISTS update_umkm_scorings_updated_at ON umkm_scorings;
 CREATE TRIGGER update_umkm_scorings_updated_at BEFORE UPDATE ON umkm_scorings
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

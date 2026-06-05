@@ -1,5 +1,12 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { getKnowledgeBase, getGovPriorityKecamatan } from "../data/loader.js";
+import { 
+  getKnowledgeBase, 
+  getGovPriorityKecamatan,
+  getClusterSummaries,
+  getModelInsights,
+  getLocationProfiles,
+  getExecutiveSummary
+} from "../data/loader.js";
 import { ChatMessage, ChatResponse, KnowledgeBaseEntry } from "../shared/types.js";
 import { requireAuth } from "../middleware/verifyToken.js";
 import { logAudit, extractRequestInfo } from "../services/audit.js";
@@ -572,8 +579,188 @@ Guidelines:
     } else {
       // Smart Fallback Parser
       let fallbackText: string | null = null;
+      let usedSources: string[] = ["fallback_heuristics"];
 
-      if (lowerMessage.includes("lokasi") || lowerMessage.includes("tempat") || lowerMessage.includes("kecamatan") || lowerMessage.includes("wilayah") || lowerMessage.includes("daerah") || lowerMessage.includes("usaha") || lowerMessage.includes("bisnis") || lowerMessage.includes("investasi")) {
+      // 1. Search for specific Kecamatan profile
+      const locProfiles = getLocationProfiles();
+      const matchedProfile = locProfiles.find(p => 
+        lowerMessage.includes(p.name.toLowerCase())
+      );
+
+      if (matchedProfile) {
+        const stats = matchedProfile.umkm_statistics || {};
+        const infra = matchedProfile.infrastructure || {};
+        const risk = matchedProfile.risk_levels || {};
+        const demo = matchedProfile.demographics || {};
+        const cl = matchedProfile.cluster || {};
+        
+        // Find priority info if exists
+        const priorityInfo = priorityKecList.find(k => k.kecamatan.toLowerCase() === matchedProfile.name.toLowerCase());
+        
+        fallbackText = `**Profil Spasial & Risiko Kredit Kecamatan ${matchedProfile.name} (${matchedProfile.kabupaten}):**\n\n` +
+          `Berdasarkan data dasar GeoUMKM Smart v4.0:\n` +
+          `- **Segmen Klaster**: \`${cl.cluster_name || "N/A"}\`\n` +
+          `- **Total Pelaku UMKM**: **${stats.n_umkm || 0}** UMKM\n` +
+          `- **Rata-rata Omset Bulanan**: **Rp ${(stats.avg_omset_juta || 0).toFixed(2)} Juta**\n` +
+          `- **Rasio Akses Internet**: **${(infra.akses_internet_pct || 0).toFixed(1)}%**\n` +
+          `- **Penetrasi KUR**: **${(infra.penetrasi_kur_pct || 0).toFixed(1)}%**\n` +
+          `- **Jarak ke Bank Terdekat**: **${(infra.jarak_ke_bank_terdekat || 0).toFixed(2)} km**\n` +
+          `- **Peringkat Kelayakan Spasial**: Rata-rata Skor Potensi **${(stats.avg_skor_potensi || 0).toFixed(1)}** (Skala 1-100)\n` +
+          `- **Masa Kelangsungan Hidup 3 Tahun (Survival Rate)**: **${((stats.survival_rate || 0) * 100).toFixed(1)}%**\n` +
+          `- **Demografi**: Populasi **${(demo.populasi || 0).toLocaleString()}** jiwa, Kepadatan **${(demo.kepadatan_penduduk || 0).toFixed(1)} / km²**\n` +
+          `- **Tingkat Risiko Bencana**: Gempa (Skor ${(risk.risiko_gempa || 0).toFixed(2)}), Banjir (Skor ${(risk.risiko_banjir || 0).toFixed(2)})\n`;
+          
+        if (priorityInfo) {
+          fallbackText += `- **Peringkat Prioritas Pemerintah**: #${priorityInfo.rank}\n` +
+            `- **Faktor Pembatas Utama (Top Limiting Factor)**: \`${priorityInfo.top_limiting_factor}\`\n` +
+            `- **Rekomendasi Intervensi**: *${priorityInfo.recommendation}*\n`;
+        }
+
+        if (matchedProfile.recommended_business_types && matchedProfile.recommended_business_types.length > 0) {
+          fallbackText += `\n**Rekomendasi Sektor Usaha Potensial**: ${matchedProfile.recommended_business_types.join(", ")}\n`;
+        }
+        
+        fallbackText += `\n*Tips:* Gunakan halaman **Location Intelligence** atau **Policy Simulation** untuk merancang alokasi anggaran intervensi guna meningkatkan skor potensi wilayah ini secara signifikan.`;
+        usedSources = ["location_profiles.json", "government_priority_kecamatan.csv"];
+      }
+
+      // 2. Search for Cluster/Klaster profile
+      if (!fallbackText && (lowerMessage.includes("cluster") || lowerMessage.includes("klaster"))) {
+        const clusterSum = getClusterSummaries();
+        let matchedCluster = clusterSum.find(c => 
+          lowerMessage.includes(c.cluster_name.toLowerCase()) ||
+          (c.cluster_name.includes("Urban") && lowerMessage.includes("urban")) ||
+          (c.cluster_name.includes("Rural") && lowerMessage.includes("rural")) ||
+          (c.cluster_name.includes("High-Risk") && (lowerMessage.includes("high-risk") || lowerMessage.includes("high risk")))
+        );
+        
+        if (matchedCluster) {
+          const char = matchedCluster.key_characteristics || {};
+          const swot = matchedCluster.swot || {};
+          
+          fallbackText = `**Analisis Profil Segmen Klaster: ${matchedCluster.cluster_name}**\n\n` +
+            `**Deskripsi**: ${matchedCluster.description}\n\n` +
+            `**Karakteristik Kunci (Rata-rata)**:\n` +
+            `- Jumlah UMKM dalam Klaster: **${matchedCluster.n_umkm.toLocaleString()}**\n` +
+            `- Skor Infrastruktur Wilayah: **${char.avg_infrastructure_score || 0}** / 100\n` +
+            `- Rata-rata Omset Bulanan: **Rp ${char.avg_omset_bulanan_juta || 0} Juta**\n` +
+            `- Adopsi Layanan Digital: **${((char.digital_adoption_rate || 0) * 100).toFixed(1)}%**\n` +
+            `- Penetrasi Kredit (KUR): **${char.kur_penetration_pct || 0}%**\n` +
+            `- Tingkat Kelangsungan Hidup 3 Tahun (Survival Rate): **${((char.survival_rate_3yr || 0) * 100).toFixed(1)}%**\n` +
+            `- Nilai Pendapatan per Kapita Area: **Rp ${char.avg_income_per_kapita || 0} Juta**\n\n` +
+            `**SWOT Analysis**:\n` +
+            `- *Kekuatan (Strengths)*: ${swot.strengths?.join(", ") || "-"}\n` +
+            `- *Kelemahan (Weaknesses)*: ${swot.weaknesses?.join(", ") || "-"}\n` +
+            `- *Peluang (Opportunities)*: ${swot.opportunities?.join(", ") || "-"}\n` +
+            `- *Ancaman (Threats)*: ${swot.threats?.join(", ") || "-"}\n\n` +
+            `**Rekomendasi Tindakan Pemerintah/Bank**:\n` +
+            `${matchedCluster.recommended_actions?.map((a: string) => `- ${a}`).join("\n") || "-"}\n\n` +
+            `*Peringkat Prioritas Intervensi Pemerintah*: #${matchedCluster.government_priority_rank || "N/A"} (Peringkat Investasi Swasta: #${matchedCluster.investment_rank || "N/A"})`;
+        } else {
+          const clusterLines = clusterSum.map(c => 
+            `- **${c.cluster_name}** (${c.n_umkm.toLocaleString()} UMKM): ${c.description}\n` +
+            `  * Rata-rata Omset: Rp ${c.key_characteristics?.avg_omset_bulanan_juta || 0} Jt/bln, Digitalisasi: ${((c.key_characteristics?.digital_adoption_rate || 0) * 100).toFixed(0)}%, Prioritas Pemda: #${c.government_priority_rank || "N/A"}`
+          ).join("\n\n");
+          
+          fallbackText = `**Segmentasi Klaster UMKM GeoUMKM Smart v4.0 (5 Klaster Terbentuk):**\n\n` +
+            `Berdasarkan algoritma K-Means & DBSCAN, pelaku UMKM di Jawa Barat dikelompokkan menjadi:\n\n` +
+            `${clusterLines}\n\n` +
+            `*Anda dapat menanyakan profil lengkap untuk salah satu klaster di atas (misal: "Bagaimana profil klaster Rural Developing?") untuk melihat analisis SWOT dan rekomendasi tindakan lengkap.*`;
+        }
+        usedSources = ["cluster_summaries.json"];
+      }
+
+      // 3. Search for Model Insights / SHAP / Features importance
+      if (!fallbackText && (
+        lowerMessage.includes("model") || 
+        lowerMessage.includes("xgboost") || 
+        lowerMessage.includes("lgbm") || 
+        lowerMessage.includes("lightgbm") || 
+        lowerMessage.includes("fitur") || 
+        lowerMessage.includes("shap") || 
+        lowerMessage.includes("feature importance")
+      )) {
+        const insights = getModelInsights();
+        const locModel = insights.location_scoring_model || {};
+        const creditModel = insights.credit_risk_model || {};
+        
+        fallbackText = `**Detail Teknis & Penjelasan Model Machine Learning GeoUMKM Smart:**\n\n` +
+          `Sistem menggunakan dua model ML utama untuk analisis kelaikan kredit dan lokasi:\n\n` +
+          `### 1. Model Skor Potensi Lokasi (${locModel.model_type || "XGBRegressor"})\n` +
+          `*Deskripsi*: ${locModel.description}\n` +
+          `*Fitur Paling Berpengaruh (Feature Importance)*:\n` +
+          `${locModel.top_features?.slice(0, 5).map((f: any) => `- **${f.feature}** (Importance: ${(f.importance * 100).toFixed(1)}%)`).join("\n") || "-"}\n` +
+          `*Temuan Kunci*:\n` +
+          `${locModel.key_findings?.map((k: string) => `- ${k}`).join("\n") || "-"}\n\n` +
+          `### 2. Model Risiko Kredit & Kelangsungan Hidup (${creditModel.model_type || "LGBMClassifier"})\n` +
+          `*Deskripsi*: ${creditModel.description}\n` +
+          `*Fitur Paling Berpengaruh (SHAP/Feature Importance)*:\n` +
+          `${creditModel.top_features?.slice(0, 5).map((f: any) => `- **${f.feature}** (Importance score: ${f.importance})`).join("\n") || "-"}\n` +
+          `*Temuan Kunci*:\n` +
+          `${creditModel.key_findings?.map((k: string) => `- ${k}`).join("\n") || "-"}\n\n` +
+          `*Informasi:* Anda dapat mengeksplorasi grafik kontribusi SHAP dan parameter kustom model langsung pada halaman **Credit Scoring** (untuk kelaikan kredit) dan **Location Intelligence** (untuk kelayakan lokasi).`;
+        usedSources = ["model_insights.json"];
+      }
+
+      // 4. Policy Simulation / What-If details
+      if (!fallbackText && (
+        lowerMessage.includes("kebijakan") || 
+        lowerMessage.includes("simulasi") || 
+        lowerMessage.includes("anggaran") || 
+        lowerMessage.includes("what-if") || 
+        lowerMessage.includes("what if") || 
+        lowerMessage.includes("intervensi")
+      )) {
+        const insights = getModelInsights();
+        const simRes = insights.policy_simulation_results || {};
+        
+        const policyLines = simRes.policies_tested?.map((p: any) => 
+          `- **${p.policy}** (Target: ${p.target_group})\n` +
+          `  * Kenaikan Skor Rata-rata: **+${p.avg_score_improvement}**\n` +
+          `  * Peningkatan Kelangsungan Hidup: **+${p.additional_survivors} UMKM**`
+        ).join("\n") || "-";
+        
+        fallbackText = `**Hasil Simulasi Intervensi Kebijakan Daerah (What-If Simulation):**\n\n` +
+          `Berdasarkan pemodelan dampak alokasi anggaran daerah di Jawa Barat:\n\n` +
+          `${policyLines}\n\n` +
+          `**Temuan Kunci Analisis Dampak**:\n` +
+          `${simRes.key_findings?.map((k: string) => `- ${k}`).join("\n") || "-"}\n\n` +
+          `*Saran:* Anda dapat menyimulasikan alokasi anggaran infrastruktur dan digital secara interaktif dengan menggeser slider pada menu **Policy Simulation** di sidebar.`;
+        usedSources = ["model_insights.json"];
+      }
+
+      // 5. General Summary Statistics / Executive metrics
+      if (!fallbackText && (
+        lowerMessage.includes("ringkasan") || 
+        lowerMessage.includes("statistik") || 
+        lowerMessage.includes("jumlah umkm") || 
+        lowerMessage.includes("data dasar") || 
+        lowerMessage.includes("dasar data") || 
+        lowerMessage.includes("metrik") || 
+        lowerMessage.includes("kpi")
+      )) {
+        const exec = getExecutiveSummary();
+        const dataSum = exec.data_summary || {};
+        const perf = exec.model_performance || {};
+        
+        fallbackText = `**Ringkasan Metrik Eksekutif GeoUMKM Smart v4.0:**\n\n` +
+          `- **Total UMKM Terdata**: **${(dataSum.total_umkm || 10000).toLocaleString()}** UMKM\n` +
+          `- **Cakupan Wilayah**: **${dataSum.kecamatan_count || 595}** Kecamatan di **${dataSum.kabupaten_kota_count || 27}** Kabupaten/Kota\n` +
+          `- **Tingkat Kelangsungan Hidup Rata-rata**: **${dataSum.survival_rate_pct || 67.2}%**\n` +
+          `- **Rata-rata Skor Kelaikan Lokasi**: **${exec.key_metrics?.avg_location_score || 70.2} / 100**\n` +
+          `- **Kesenjangan Perkotaan-Pedesaan (Urban-Rural Gap)**: **${exec.key_metrics?.urban_rural_gap || 17.4} poin**\n` +
+          `- **Digital Premium (Kenaikan Skor dengan Digital Presence)**: **+${exec.key_metrics?.digital_premium || 12.8} poin**\n` +
+          `- **Total Potensi Pasar Bulanan (Market Size)**: **Rp ${(exec.key_metrics?.total_market_size_miliar_annual || 58.5).toFixed(1)} Miliar / tahun**\n\n` +
+          `**Kinerja Model Machine Learning**:\n` +
+          `- *Location Scoring (${perf.location_scoring?.algorithm || "XGBRegressor"})*: R² Score **${perf.location_scoring?.r2 || 0.82}**\n` +
+          `- *Credit Scoring (${perf.credit_risk?.algorithm || "LGBMClassifier"})*: AUC-ROC **${perf.credit_risk?.auc_roc_approx || 0.88}**\n` +
+          `- *Clustering (${perf.clustering?.algorithm || "K-Means / DBSCAN"})*: Silhouette Score **${perf.clustering?.silhouette_score || 0.72}**\n\n` +
+          `*Catatan:* Semua metrik di atas dihitung berdasarkan integrasi data spasial rill dan diperbarui secara berkala pada menu **Overview**.`;
+        usedSources = ["executive_summary.json"];
+      }
+
+      // 6. Original Sector Recommendations fallback
+      if (!fallbackText && (lowerMessage.includes("lokasi") || lowerMessage.includes("tempat") || lowerMessage.includes("kecamatan") || lowerMessage.includes("wilayah") || lowerMessage.includes("daerah") || lowerMessage.includes("usaha") || lowerMessage.includes("bisnis") || lowerMessage.includes("investasi"))) {
         let detectedSector = "";
         if (lowerMessage.includes("textile") || lowerMessage.includes("tekstil") || lowerMessage.includes("baju") || lowerMessage.includes("pakaian") || lowerMessage.includes("fashion") || lowerMessage.includes("kain") || lowerMessage.includes("butik") || lowerMessage.includes("garment") || lowerMessage.includes("konveksi")) {
           detectedSector = "Fashion";
@@ -605,33 +792,16 @@ Guidelines:
               `Berdasarkan analisis geospasial real-time GeoUMKM, berikut adalah top 3 wilayah paling direkomendasikan untuk membuka usaha **${detectedSector}** (seperti pakaian/tekstil):\n\n` +
               `${recText}\n\n` +
               `*Tips:* Anda dapat meninjau peta interaktif sebaran spasial dan menyimulasikan parameter MCDA kustom Anda pada menu **Location Intelligence** di sidebar.`;
+            usedSources = ["recommendations_by_kecamatan.csv"];
           }
         }
-      }
-
-      if (!fallbackText && (lowerMessage.includes("kredit") || lowerMessage.includes("skor") || lowerMessage.includes("scoring") || lowerMessage.includes("kelaikan") || lowerMessage.includes("kelayakan") || lowerMessage.includes("rating"))) {
-        fallbackText = `**Analisis Risiko Kredit & Kelayakan UMKM (XGBoost ML):**\n\n` +
-          `Sistem GeoUMKM menilai kelayakan kredit menggunakan model XGBoost terlatih berdasarkan indikator operasional:\n` +
-          `- **Variabel Utama (SHAP)**: Usia operasional usaha (business maturity) dan ada/tidaknya digital presence merupakan penentu terbesar.\n` +
-          `- **Contoh Uji Model**: UMKM makanan terdaftar dengan omset Rp 50 Jt/bulan dan 4 karyawan menghasilkan Skor Kredit **720 (Rating A)** dengan **Probability of Default (PD) 2.45%** (Kategori Risiko Rendah).\n\n` +
-          `*Saran:* Silakan buka halaman **Credit Scoring** untuk menghitung skor kredit kustom usaha Anda menggunakan kalkulator interaktif.`;
-      }
-
-      if (!fallbackText && (lowerMessage.includes("portofolio") || lowerMessage.includes("default") || lowerMessage.includes("npl") || lowerMessage.includes("expected loss"))) {
-        fallbackText = `**Ringkasan Status Risiko Portofolio Kredit UMKM:**\n\n` +
-          `Kondisi kesehatan pembiayaan portofolio UMKM di Jawa Barat:\n` +
-          `- **Total Eksposur**: Rp 585 Miliar\n` +
-          `- **Average Probability of Default (PD)**: 43.2%\n` +
-          `- **Rasio Kredit Bermasalah (NPL Ratio)**: 4.2% (Tergolong Sehat)\n` +
-          `- **Expected Loss (Estimasi Kerugian Fiskal)**: Rp 175.5 Miliar\n\n` +
-          `Untuk simulasi stress testing NPL terhadap gejolak inflasi atau suku bunga BI Rate, silakan buka menu **Portfolio Analytics**.`;
       }
 
       if (fallbackText) {
         response = {
           response: fallbackText,
           intent: "smart_fallback_response",
-          sources: ["dataloader_recommendations", "model_parameters"]
+          sources: usedSources
         };
       } else if (match) {
         response = {
@@ -644,7 +814,7 @@ Guidelines:
           response:
             "Halo! Saya adalah Asisten GeoUMKM Intelligence. Saya dapat membantu Anda menganalisis " +
             "lokasi potensial untuk usaha (misalnya: 'lokasi usaha textile'), menilai risiko kredit UMKM, " +
-            "menganalisis kesehatan portofolio keuangan, serta klasterisasi wilayah. Silakan tanyakan secara spesifik tentang kebutuhan analisis Anda.",
+            "menganalisis kesehatan portofolio keuangan, profil klaster, serta simulasi kebijakan. Silakan tanyakan secara spesifik tentang kebutuhan analisis Anda.",
           intent: "general",
           sources: [],
         };

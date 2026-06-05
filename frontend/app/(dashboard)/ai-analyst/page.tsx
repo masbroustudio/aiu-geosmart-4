@@ -37,7 +37,7 @@ import {
 } from 'recharts';
 import DownloadCSVButton from '@/components/ui/DownloadCSVButton';
 import { useToast } from '@/lib/toast-context';
-import { fetchStatus } from '@/lib/api';
+import { fetchStatus, postChat } from '@/lib/api';
 
 // Types for Chat & Analysis
 interface ChatMessage {
@@ -289,19 +289,46 @@ export default function AiAnalystPage() {
         setLoading(false);
       }, 500);
     } else {
-      // Out-of-scope handler as requested: A3 response
       setLoading(true);
-      setTimeout(() => {
+      try {
+        // Call the backend API chat for arbitrary queries!
+        const res = await postChat({
+          message: text,
+          persona: 'government' // default persona for AI Analyst
+        });
+        
+        if (res && res.response) {
+          setMessages(prev => [
+            ...prev,
+            {
+              role: 'assistant',
+              content: res.response,
+              timestamp: new Date()
+            }
+          ]);
+        } else {
+          setMessages(prev => [
+            ...prev,
+            {
+              role: 'assistant',
+              content: 'Maaf, data tidak tersedia atau di luar cakupan riset saya. Saya dikonfigurasi khusus untuk melakukan analisis data geospasial, risiko kredit, dan klasterisasi UMKM Jawa Barat.',
+              timestamp: new Date()
+            }
+          ]);
+        }
+      } catch (err) {
+        console.error("Gagal memanggil backend chat API:", err);
         setMessages(prev => [
           ...prev,
           {
             role: 'assistant',
-            content: 'Maaf, data tidak tersedia atau di luar cakupan riset saya. Saya dikonfigurasi khusus untuk melakukan analisis data geospasial, risiko kredit, dan klasterisasi UMKM Jawa Barat.',
+            content: 'Terjadi kesalahan saat menghubungi server analisis AI. Silakan coba beberapa saat lagi.',
             timestamp: new Date()
           }
         ]);
+      } finally {
         setLoading(false);
-      }, 500);
+      }
     }
   };
 

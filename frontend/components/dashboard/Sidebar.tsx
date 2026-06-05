@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -89,6 +89,30 @@ export default function Sidebar() {
 
 function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate: () => void }) {
   const router = useRouter();
+  const [userRole, setUserRole] = useState("Viewer");
+  const [fullName, setFullName] = useState("User");
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (token) {
+      try {
+        const parts = token.split(".");
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          if (payload.email) {
+            // Default name extraction from email prefix
+            const namePart = payload.email.split("@")[0];
+            setFullName(namePart.charAt(0).toUpperCase() + namePart.slice(1));
+          }
+          if (payload.role) {
+            setUserRole(payload.role.charAt(0).toUpperCase() + payload.role.slice(1));
+          }
+        }
+      } catch (e) {
+        console.error("Gagal men-decode token otentikasi:", e);
+      }
+    }
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -142,11 +166,11 @@ function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate
       <div className="p-4 border-t border-slate-800 flex items-center justify-between gap-2">
         <div className="flex items-center gap-3 overflow-hidden">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-bold text-white">U</span>
+            <span className="text-xs font-bold text-white">{fullName.charAt(0).toUpperCase()}</span>
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-white truncate">User</p>
-            <p className="text-xs text-slate-500 truncate">Administrator</p>
+            <p className="text-sm font-medium text-white truncate" title={fullName}>{fullName}</p>
+            <p className="text-xs text-slate-500 truncate">{userRole}</p>
           </div>
         </div>
         <button

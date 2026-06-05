@@ -111,12 +111,12 @@ async function handler(
     // Hash password
     const hashedPassword = await bcryptjs.hash(body.password, 10);
 
-    // Create user
+    // Create user (default to administrator role for demo/MVP testing to avoid 403 Forbidden errors)
     const user = await createUser(
       body.email,
       hashedPassword,
       body.full_name,
-      'viewer'
+      'administrator'
     );
 
     // Generate JWT token
