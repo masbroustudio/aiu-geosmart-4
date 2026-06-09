@@ -138,26 +138,26 @@ export async function fetchClusters() {
         id: p.id !== undefined ? p.id : (p.cluster_id !== undefined ? p.cluster_id : 0),
         name: p.name || p.cluster_name || '',
         n_umkm: Number(p.n_umkm || 0),
-        avg_score: Number(p.avg_score || p.skor_potensi || 0),
-        infra_score: Number(p.infra_score || p.skor_infrastruktur || 0),
-        digital_pct: Number(p.digital_pct || p.has_digital_presence || 0),
-        survival_rate: Number(p.survival_rate || p.is_survived_3yr || 0),
-        avg_omset: Number(p.avg_omset || p.omset_bulanan || 0),
-        income: Number(p.income || p.income_per_kapita || 0)
+        avg_score: Number(p.avg_score !== undefined ? p.avg_score : (p.skor_potensi !== undefined ? p.skor_potensi : 0)),
+        infra_score: Number(p.infra_score !== undefined ? p.infra_score : (p.skor_infrastruktur !== undefined ? p.skor_infrastruktur : 0)),
+        digital_pct: Number(p.digital_pct !== undefined ? p.digital_pct : (p.akses_internet_pct !== undefined ? p.akses_internet_pct : (p.has_digital_presence ? p.has_digital_presence * 100 : 0))),
+        survival_rate: Number(p.survival_rate !== undefined ? p.survival_rate : (p.is_survived_3yr !== undefined ? p.is_survived_3yr : 0)),
+        avg_omset: Number(p.avg_omset !== undefined ? p.avg_omset : (p.omset_bulanan !== undefined ? p.omset_bulanan / 1000000 : 0)),
+        income: Number(p.income !== undefined ? p.income : (p.income_per_kapita !== undefined ? p.income_per_kapita : 0))
       })),
       govPriority: (data.government_priority || data.govPriority || []).map((item: any) => ({
         rank: Number(item.rank || item.priority_rank || 0),
-        cluster: item.cluster || item.cluster_name || '',
+        cluster: item.cluster_name || item.cluster || '',
         n_umkm: Number(item.n_umkm || 0),
         priority_score: Number(item.priority_score || 0),
         budget_pct: Number(item.budget_pct || item.budget_allocation_pct || 0)
       })),
       investment: (data.investment_opportunities || data.investment || []).map((item: any) => ({
         rank: Number(item.rank || item.investment_rank || 0),
-        cluster: item.cluster || item.cluster_name || '',
+        cluster: item.cluster_name || item.cluster || '',
         n_umkm: Number(item.n_umkm || 0),
         investment_score: Number(item.investment_score || 0),
-        market_size_juta: Number(item.market_size_juta || item.total_market_size_juta || 0)
+        market_size_juta: Number(item.market_size_juta !== undefined ? item.market_size_juta : (item.total_market_size_juta !== undefined ? item.total_market_size_juta : 0))
       }))
     };
   }
@@ -316,6 +316,14 @@ export async function fetchKecamatan(_params?: { kabupaten?: string }) {
   // for color-coding. The static data has pre-computed scores.
   return kecamatanMapData;
 }
+
+export async function fetchKecamatanRef(params?: { kabupaten?: string }) {
+  const query = new URLSearchParams();
+  if (params?.kabupaten) query.set('kabupaten', params.kabupaten);
+  const path = `/api/kecamatan${query.toString() ? `?${query}` : ''}`;
+  return fetchWithFallback<any[]>(path, []);
+}
+
 
 export async function postChat(body: { message: string; persona: string; history?: Array<{ role: string; content: string }> }): Promise<{ response: string }> {
   if (!BASE_URL) return { response: '' };

@@ -9,6 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import KPICard from '@/components/dashboard/KPICard';
 import { kecamatanDetailMap } from '@/lib/kecamatan-detail-data';
 import { kecamatanMapData, kecamatanDetailData } from '@/lib/static-data';
+import { fetchRecommendations, fetchKecamatanRef } from '@/lib/api';
 
 const KecamatanMiniMap = dynamic(() => import('@/components/dashboard/KecamatanMiniMap'), { ssr: false });
 
@@ -17,11 +18,121 @@ function KecamatanContent() {
   const name = searchParams.get('name') || '';
   const kabupaten = searchParams.get('kabupaten') || '';
   const [loading, setLoading] = useState(true);
+  const [dynamicDetail, setDynamicDetail] = useState<any | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 300);
-    return () => clearTimeout(timer);
-  }, []);
+    // If it's in hardcoded map, we don't need dynamic load
+    if (kecamatanDetailMap[name]) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    async function loadDynamicData() {
+      try {
+        setLoading(true);
+        const [recs, refs] = await Promise.all([
+          fetchRecommendations(),
+          fetchKecamatanRef()
+        ]);
+
+        if (cancelled) return;
+
+        // Find recommendations matching our kecamatan name & kabupaten
+        const matches = recs.filter(
+          (r: any) => r.kecamatan.toLowerCase() === name.toLowerCase() &&
+                     r.kabupaten.toLowerCase() === kabupaten.toLowerCase()
+        );
+
+        // Find reference data
+        const refEntry = refs.find(
+          (r: any) => r.kecamatan.toLowerCase() === name.toLowerCase() &&
+                     r.kabupaten_kota.toLowerCase() === kabupaten.toLowerCase()
+        );
+
+        if (matches.length === 0 && !refEntry) {
+          setErrorMsg(`Data untuk kecamatan "${name}" tidak tersedia.`);
+          setLoading(false);
+          return;
+        }
+
+        // Take the first match or construct from reference
+        const mainMatch: any = matches[0];
+        
+        // Find all recommended businesses for this kecamatan
+        const recommended_business = matches.map((m: any) => m.jenis_usaha).filter(Boolean);
+
+        // Fallback or computed fields
+        const lat = refEntry?.latitude || mainMatch?.lat || -6.917;
+        const lng = refEntry?.longitude || mainMatch?.lng || 107.619;
+        const population = refEntry?.populasi || mainMatch?.populasi || 100000;
+        const avg_skor_potensi = mainMatch?.avg_score || refEntry?.skor_infrastruktur || 50;
+        const avg_omset = mainMatch?.avg_omset || 50;
+        const survival_rate = mainMatch?.survival_rate || 70;
+        const infrastructure_score = refEntry?.skor_infrastruktur || mainMatch?.avg_infrastruktur || 50;
+        const digital_readiness = refEntry?.akses_internet_pct || mainMatch?.avg_internet || 50;
+        const financial_access = refEntry?.penetrasi_kur_pct ? (refEntry.penetrasi_kur_pct <= 1 ? refEntry.penetrasi_kur_pct * 100 : refEntry.penetrasi_kur_pct) : (mainMatch?.avg_financial_access || 50);
+        const risk_flood = refEntry ? Math.round(refEntry.risiko_banjir * 100) : 20;
+        const risk_earthquake = refEntry ? Math.round(refEntry.risiko_gempa * 100) : 20;
+        const competition_level = refEntry?.jumlah_kompetitor_radius_3km || mainMatch?.competitorCount || 10;
+
+        // Generate dynamic umkm list using same formula as static data
+        const generateUMKMList = (count: number, baseScore: number) => {
+          const types = ['Makanan', 'Fashion', 'Kerajinan', 'Jasa', 'Pertanian'];
+          const entries = [];
+          for (let i = 0; i < count; i++) {
+            const variance = (i * 7 + 3) % 40 - 20;
+            entries.push({
+              jenis_usaha: types[i % types.length],
+              omset: Math.round((20 + (baseScore / 100) * 130 + variance) * 10) / 10,
+              karyawan: Math.max(1, Math.min(15, Math.round(1 + (baseScore / 100) * 14 + (i % 5 - 2)))),
+              skor: Math.max(30, Math.min(95, Math.round(baseScore + variance))),
+              digital_presence: baseScore > 50 ? i % 3 !== 0 : i % 4 === 0,
+              tahun_berdiri: 2005 + (i * 3) % 18,
+            });
+          }
+          return entries;
+        };
+
+        const constructedDetail = {
+          name: name,
+          kabupaten: kabupaten,
+          lat,
+          lng,
+          population,
+          avg_skor_potensi,
+          avg_omset,
+          survival_rate,
+          infrastructure_score,
+          digital_readiness,
+          financial_access,
+          risk_flood,
+          risk_earthquake,
+          competition_level,
+          umkm_list: generateUMKMList(8, avg_skor_potensi),
+          recommended_business: recommended_business.length > 0 ? recommended_business : ['Makanan', 'Fashion', 'Jasa'],
+          score_breakdown: {
+            infrastructure: infrastructure_score,
+            digital: digital_readiness,
+            financial: financial_access,
+            risk: Math.max(0, 100 - (risk_flood + risk_earthquake) / 2),
+            location: avg_skor_potensi
+          }
+        };
+
+        setDynamicDetail(constructedDetail);
+      } catch (e) {
+        console.error("Error loading dynamic data:", e);
+        setErrorMsg("Gagal memuat detail data kecamatan.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadDynamicData();
+    return () => { cancelled = true; };
+  }, [name, kabupaten]);
 
   if (loading) {
     return (
@@ -45,7 +156,7 @@ function KecamatanContent() {
   }
 
   // Check if we have detailed data
-  const detailData = kecamatanDetailMap[name];
+  const detailData = kecamatanDetailMap[name] || dynamicDetail;
 
   // Fallback: try to find from map data + detail data
   const mapEntry = kecamatanMapData.find(
@@ -65,11 +176,12 @@ function KecamatanContent() {
         <div className="glass-card p-8 text-center">
           <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-white mb-2">Kecamatan Tidak Ditemukan</h2>
-          <p className="text-slate-400">Data untuk kecamatan &quot;{name}&quot; tidak tersedia.</p>
+          <p className="text-slate-400">{errorMsg || `Data untuk kecamatan "${name}" tidak tersedia.`}</p>
         </div>
       </div>
     );
   }
+
 
   // Use detailed data if available, otherwise build from basic data
   if (detailData) {
