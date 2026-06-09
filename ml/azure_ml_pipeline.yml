@@ -1,0 +1,62 @@
+$schema: https://azuremlschemas.azureedge.net/latest/pipelineJob.schema.json
+type: pipeline
+experiment_name: geoumkm-mlops-pipeline
+description: Pipeline otomatis retraining model XGBoost (Potensi Wilayah) & LightGBM (Risiko Kredit) untuk GeoUMKM Smart v4.1
+
+# 1. Konfigurasi Cluster Komputasi Azure ML
+compute: azureml:cpu-cluster
+
+# 2. Input Dataset Utama dari Azure Datastore (PostgreSQL / Blob)
+inputs:
+  raw_dataset:
+    type: uri_file
+    path: azureml:umkm_dataset_postgres:1
+
+# 3. Langkah-Langkah Pipeline (Jobs)
+jobs:
+  # Langkah A: Pembersihan & Rekayasa Fitur (Feature Engineering)
+  feature_engineering:
+    type: command
+    code: ./scripts
+    command: >-
+      python feature_engineering.py 
+      --input_data ${{inputs.raw_data}} 
+      --output_data ${{outputs.clean_data}}
+    inputs:
+      raw_data: ${{parent.inputs.raw_dataset}}
+    outputs:
+      clean_data:
+        type: uri_folder
+    environment: azureml:AzureML-sklearn-1.0-ubuntu20.04-py38-cpu:1
+
+  # Langkah B: Pelatihan Model Ganda (XGBoost & LightGBM)
+  model_training:
+    type: command
+    code: ./scripts
+    command: >-
+      python train_models.py 
+      --input_data ${{inputs.clean_data}} 
+      --model_output ${{outputs.trained_models}}
+    inputs:
+      clean_data: ${{parent.jobs.feature_engineering.outputs.clean_data}}
+    outputs:
+      trained_models:
+        type: uri_folder
+    environment: azureml:AzureML-lightgbm-3.2-ubuntu20.04-py38-cpu:1
+
+  # Langkah C: Evaluasi Kinerja Model & Kalibrasi PD Buckets Basel III
+  model_evaluation:
+    type: command
+    code: ./scripts
+    command: >-
+      python evaluate_models.py 
+      --test_data ${{inputs.clean_data}} 
+      --models_dir ${{inputs.trained_models}} 
+      --metrics_output ${{outputs.evaluation_metrics}}
+    inputs:
+      clean_data: ${{parent.jobs.feature_engineering.outputs.clean_data}}
+      trained_models: ${{parent.jobs.model_training.outputs.trained_models}}
+    outputs:
+      evaluation_metrics:
+        type: uri_folder
+    environment: azureml:AzureML-sklearn-1.0-ubuntu20.04-py38-cpu:1
